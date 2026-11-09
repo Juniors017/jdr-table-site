@@ -1,0 +1,74 @@
+/* Mêmes couleurs et polices que l'écran du MJ de l'appli. */
+:root {
+  --fond: #15120f;
+  --fond2: #0e0c0a;
+  --carte: #1e1a15;
+  --survol: #2a2318;
+  --trait: #332b22;
+  --trait2: #4a3f31;
+  --or: #d9a441;
+  --or2: #e2b45a;
+  --texte: #ece3d0;
+  --texte2: #cfc4ae;
+  --muet: #9a8d78;
+  --titre: "Cinzel", Georgia, serif;
+  --ui: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --large: 1180px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+body { margin: 0; background: var(--fond); color: var(--texte); font: 400 17px/1.6 var(--ui); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; display: block; -webkit-user-drag: none; user-select: none; }
+a { color: var(--or2); }
+a:hover { color: #fff; }
+:focus-visible { outline: 2px solid var(--or2); outline-offset: 3px; border-radius: 4px; }
+
+h1, h2, h3 { font-family: var(--titre); color: #fff; margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: clamp(2.2rem, 5.2vw, 4rem); font-weight: 700; letter-spacing: .01em; }
+h2 { font-size: clamp(1.6rem, 3.2vw, 2.4rem); font-weight: 600; }
+h3 { font-size: 1.15rem; font-weight: 600; letter-spacing: .02em; }
+p { margin: 0; text-wrap: pretty; }
+.sur-titre { font: 700 .8rem/1.2 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: var(--or2); margin-bottom: 12px; }
+.chapo { color: var(--texte2); font-size: 1.15rem; max-width: 62ch; margin-top: 14px; }
+.discret { color: var(--muet); font-size: .92rem; }
+
+.bloc { max-width: var(--large); margin: 0 auto; padding: clamp(56px, 9vw, 110px) 20px; }
+.bloc + .bloc { border-top: 1px solid var(--trait); }
+
+/* --- Bandeau --- */
+.bandeau { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 10px max(20px, calc((100vw - var(--large)) / 2 + 20px)); background: rgb(21 18 15 / .88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--trait); }
+.logo { display: flex; align-items: center; gap: 10px; font: 600 1.05rem/1 var(--titre); letter-spacing: .06em; text-transform: uppercase; color: #fff; text-decoration: none; white-space: nowrap; }
+.logo svg { width: 26px; height: 26px; fill: none; stroke: var(--or); stroke-width: 1.6; stroke-linejoin: round; }
+.bandeau nav { display: flex; align-items: center; gap: clamp(10px, 2.4vw, 26px); }
+.bandeau nav a:not(.bouton) { color: var(--texte2); text-decoration: none; font-weight: 600; font-size: .95rem; }
+.bandeau nav a:not(.bouton):hover { color: #fff; }
+@media (max-width: 720px) { .bandeau nav a:not(.bouton):not([href$="catalogue/"]) { display: none; } }
+
+/* --- Boutons --- */
+.bouton { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 8px; border: 1px solid var(--or); background: var(--or); color: #1a1408;
+  font: 700 1rem/1 var(--ui); text-decoration: none; cursor: pointer; transition: background .15s, transform .15s; }
+.bouton:hover { background: #ecc066; color: #1a1408; transform: translateY(-1px); }
+.bouton.creux { background: transparent; color: var(--or2); border-color: var(--trait2); }
+.bouton.creux:hover { background: var(--survol); color: #fff; }
+.bouton.petit { padding: 9px 14px; font-size: .9rem; }
+
+/* --- Figurines : planche réduite de 8 × 2 images (ligne 0 = repos, ligne 1 = marche, vers le bas) --- */
+.fig { aspect-ratio: 1; background-repeat: no-repeat; background-size: 800% 200%; background-position-y: calc(var(--ligne, 1) * 100%);
+  animation: fig-pas .8s steps(8) infinite; }
+@keyframes fig-pas { from { background-position-x: 0%; } to { background-position-x: 114.2857%; } }
+
+/* --- Bandes animées (portes, coffres, feux, dés) : n images côte à côte --- */
+.bande { background-repeat: no-repeat; background-size: calc(var(--n) * 100%) 100%; animation: bande-pas var(--duree, 1s) steps(var(--n)) infinite; }
+.bande.aller-retour { animation-direction: alternate; }
+@keyframes bande-pas { from { background-position-x: 0%; } to { background-position-x: calc(100% * var(--n) / (var(--n) - 1)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .fig, .bande { animation: none; }
+}
+
+/* --- Pied --- */
+.pied { border-top: 1px solid var(--trait); background: var(--fond2); padding: 36px 20px 48px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.pied .discret { max-width: 70ch; }

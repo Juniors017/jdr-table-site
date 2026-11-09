@@ -1,0 +1,408 @@
+---
+import Page from '../layouts/Page.astro';
+import { SITE, url } from '../site';
+import catalogue from '../data/catalogue.json';
+
+const nom = (id: string) => catalogue.figs.find((f) => f.id === id)?.nom ?? id;
+
+// Pions qui se promènent sur la carte du haut de page. Positions en cases (carte de 32 × 18).
+const pions = [
+  { id: 'hero_fighter', taille: 1.5, v: 1, pts: [[12.9, 16.6], [12.9, 11.6], [18, 11.6], [18, 9.3]] },
+  { id: 'hero_wizard', taille: 1.5, v: 0.95, pts: [[13.7, 17.6], [13.7, 12.5], [16.6, 12.5], [16.6, 9.8]] },
+  { id: 'npc_barmaid', taille: 1.5, v: 0.9, pts: [[9.6, 6.6], [18.6, 6.6]] },
+  { id: 'mob_rat', taille: 1.5, v: 1.5, pts: [[19.2, 3.6], [23, 4.2], [22.6, 7], [19.4, 6.8]] },
+  { id: 'animal_cat', taille: 1.5, v: 1.1, pts: [[26, 3.2], [30.4, 6.2], [28.6, 12.6], [25.4, 10.2]] },
+];
+
+const etapes = [
+  { t: 'Pose la TV à plat', d: "N'importe quelle TV fait l'affaire. Une plaque de plexiglas par-dessus protège la dalle des figurines." },
+  { t: 'Branche ton PC en HDMI', d: "La Vue Table s'ouvre toute seule en plein écran sur la TV. Ton écran, lui, reste l'écran du MJ." },
+  { t: 'Calibre une fois', d: 'Mesure la barre jaune avec une règle : les cases font alors exactement la taille de tes socles (25,4 mm par défaut).' },
+];
+
+const fonctions = [
+  { img: 'cave_entrance', t: 'Brouillard de guerre', d: "Révèle ou cache la carte au pinceau. Les pions cachés et tes notes restent sur ton écran, jamais sur la TV." },
+  { img: 'door_wood', t: 'Carte vivante', d: 'Un clic ouvre une porte, un coffre ou le pont-levis, arme un piège, éteint une torche. Eau, lave et feux sont animés.' },
+  { img: 'bookshelf', t: 'Créateur de carte', d: '428 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
+  { img: 'trap_plate', t: 'Déclencheurs et macros', d: "Une zone invisible lance une suite d'actions quand un pion y entre : piège, embuscade, mur qui se referme, scène suivante." },
+  { img: 'campsite', t: 'PNJ autonomes', d: "Trajets tracés à la souris, errance dans une zone, trajet aléatoire : les PNJ contournent murs, portes fermées et lave tout seuls." },
+  { img: 'scroll', t: 'Scènes et quêtes', d: "Chaque scène garde carte, brouillard, pions et ambiance. Range-les par quête, puis enchaîne l'histoire d'une touche." },
+  { img: 'fx_fireball', t: 'Effets et météo', d: 'Boule de feu, éclair, glace, secousse, pluie, braises : un clic sur la carte, ou une touche du clavier là où est la souris.' },
+  { img: 'crystal_ball', t: 'Sons et ambiances', d: "Sons intégrés hors ligne, ou télécommande de Syrinscape : ambiances complètes, sons d'apparition et de coup par pion." },
+];
+
+const vedettes = [
+  'hero_fighter', 'hero_wizard', 'hero_rogue', 'hero_cleric', 'hero_elf_archer', 'hero_dwarf_fighter', 'hero_paladin', 'hero_tiefling',
+  'npc_innkeeper', 'npc_blacksmith', 'npc_king', 'npc_guard', 'mob_goblin', 'mob_orc', 'mob_skeleton', 'mob_spider',
+  'mob_owlbear', 'mob_troll', 'mob_minotaur', 'mob_dragon_gold', 'boss_lich', 'animal_horse', 'animal_bear', 'animal_cat',
+];
+
+const cartes = [
+  { f: 'taverne', t: 'Taverne du Dragon assoupi' },
+  { f: 'crypte', t: 'Crypte des rois oubliés' },
+  { f: 'foret', t: 'Clairière du vieux chêne' },
+  { f: 'port', t: 'Port de Haute-Mer' },
+];
+
+const des = [
+  { id: 'd4', faces: 4 }, { id: 'd6', faces: 6 }, { id: 'd8', faces: 8 }, { id: 'd10', faces: 10 },
+  { id: 'd12', faces: 12 }, { id: 'd20', faces: 20 }, { id: 'd100', faces: 10 },
+];
+
+const animes = ['door_wood_anim', 'chest_royal_anim', 'mimic_chest_anim', 'trapdoor_anim', 'fire_brazier_anim', 'fire_camp_anim', 'lava_anim', 'water_anim']
+  .map((id) => catalogue.anims.find((a) => a.id === id)!)
+  .filter(Boolean);
+
+const chiffres = [
+  { n: '608', t: 'images vues de dessus' },
+  { n: '156', t: 'figurines animées' },
+  { n: '21', t: 'objets animés' },
+  { n: '7', t: 'dés, du d4 au d100' },
+  { n: '4', t: 'cartes prêtes à jouer' },
+];
+
+const lancement = [
+  'Branche le PC sur la TV en HDMI (Windows : Win + P, puis « Étendre »).',
+  'Double-clique sur « Lancer la table.bat ». La première fois, il installe l\'appli : compte une minute.',
+  'Clique « Ouvrir la Vue Table » : elle s\'affiche en plein écran sur la TV.',
+  'Calibre la TV, charge une carte prête à jouer, pose tes pions. La partie peut commencer.',
+];
+---
+
+<Page>
+  <section class="hero">
+    <div class="hero-texte">
+      <p class="sur-titre">Appli de jeu de rôle pour MJ</p>
+      <h1>Ta TV à plat devient un plateau de jeu animé</h1>
+      <p class="chapo">
+        Pose tes figurines sur l'écran, pilote tout depuis ton PC : brouillard de guerre, créatures qui marchent,
+        portes qui s'ouvrent, pièges qui se déclenchent, dés et ambiance sonore.
+      </p>
+      <div class="actions">
+        <a class="bouton" href="#demarrer">Démarrer une partie</a>
+        <a class="bouton creux" href="#fonctions">Voir les fonctions</a>
+      </div>
+    </div>
+
+    <div class="tv-socle" aria-hidden="true">
+      <div class="tv">
+        <div class="plateau" id="plateau" style={`background-image:url(${url('cartes/taverne.webp')})`}>
+          <div class="grille"></div>
+          {pions.map((p) => (
+            <div
+              class="fig pion"
+              data-pts={JSON.stringify(p.pts)}
+              data-v={p.v}
+              style={`width:${(p.taille / 32) * 100}%;left:${(p.pts[0][0] / 32) * 100}%;top:${(p.pts[0][1] / 18) * 100}%;background-image:url(${url(`marche-demo/${p.id}.webp`)})`}
+            />
+          ))}
+          <div class="brouillard"></div>
+        </div>
+      </div>
+    </div>
+    <p class="legende discret">La Taverne du Dragon assoupi, une des cartes prêtes à jouer. Le brouillard cache la réserve… et ce qui s'y promène.</p>
+  </section>
+
+  <section class="bloc" id="principe">
+    <p class="sur-titre">Le principe</p>
+    <h2>Deux écrans, une seule table</h2>
+    <p class="chapo">La TV montre aux joueurs ce qu'ils ont le droit de voir. Ton écran montre tout le reste : pions cachés, trajets, zones de déclenchement.</p>
+    <ol class="etapes">
+      {etapes.map((e, i) => (
+        <li>
+          <span class="numero">{i + 1}</span>
+          <h3>{e.t}</h3>
+          <p>{e.d}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="bloc" id="ecran">
+    <p class="sur-titre">L'écran du MJ</p>
+    <h2>Tout se pilote depuis ton PC</h2>
+    <p class="chapo">Deux modes : <strong>Jouer</strong> pour mener la partie, <strong>Préparer</strong> pour construire tes scènes. Voici l'appli telle qu'elle est.</p>
+    <div class="captures">
+      <figure>
+        <a href={url('fonctions/#ecrans')}><img src={url('captures/jouer-pion.webp')} alt="Écran du MJ en mode Jouer : la taverne, ses pions et le panneau du pion sélectionné" width="1600" height="841" loading="lazy" /></a>
+        <figcaption><strong>Jouer.</strong> Pions, brouillard, effets, dés : tout est à un clic.</figcaption>
+      </figure>
+      <figure>
+        <a href={url('fonctions/#declencheurs')}><img src={url('captures/prep-declencheurs.webp')} alt="Écran du MJ en mode Préparer : liste des scènes, carte et panneau des déclencheurs" width="1600" height="841" loading="lazy" /></a>
+        <figcaption><strong>Préparer.</strong> Scènes par quête, créateur de carte, déclencheurs.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="bloc" id="fonctions">
+    <p class="sur-titre">Les fonctions</p>
+    <h2>Tout ce qu'il faut pour mener la partie</h2>
+    <div class="cartouches">
+      {fonctions.map((f) => (
+        <article class="cartouche">
+          <img src={url(`pieces/${f.img}.webp`)} alt="" width="72" height="72" loading="lazy" />
+          <h3>{f.t}</h3>
+          <p>{f.d}</p>
+        </article>
+      ))}
+    </div>
+    <p class="chapo plus">
+      Et aussi : affichage 2D ou 3D de la table, marqueurs d'état sur les pions, héros « à terre » à 0 PV, gabarits de sorts,
+      raccourcis clavier pour chaque action, partie en ligne, et trois quêtes d'exemple avec leur histoire pour le MJ.
+    </p>
+    <p class="suite"><a class="bouton" href={url('fonctions/')}>Découvrir toutes les fonctions</a></p>
+  </section>
+
+  <section class="bloc" id="bestiaire">
+    <p class="sur-titre">Le bestiaire</p>
+    <h2>156 figurines qui marchent vraiment</h2>
+    <p class="chapo">Héros, PNJ de ville, monstres, animaux et attelages, rendus en 3D vus de dessus, dans les quatre directions. En voici quelques-uns.</p>
+    <ul class="bestiaire">
+      {vedettes.map((id) => (
+        <li>
+          <div class="fig" data-bg={url(`marche/${id}.webp`)} role="img" aria-label={nom(id)}></div>
+          <span>{nom(id)}</span>
+        </li>
+      ))}
+    </ul>
+    <p class="suite"><a class="bouton creux" href={url('catalogue/')}>Parcourir tout le catalogue</a></p>
+  </section>
+
+  <section class="bloc" id="cartes">
+    <p class="sur-titre">Les cartes</p>
+    <h2>Quatre cartes prêtes à jouer</h2>
+    <p class="chapo">Un clic les charge, 32 × 18 cases, pile à la taille de la TV. Tu peux ensuite tout modifier dans le créateur de carte.</p>
+    <div class="cartes">
+      {cartes.map((c) => (
+        <figure>
+          <img src={url(`cartes/${c.f}.webp`)} alt={`Carte vue de dessus : ${c.t}`} width="1920" height="1080" loading="lazy" />
+          <figcaption>{c.t}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="bloc deux" id="des">
+    <div>
+      <p class="sur-titre">Les dés</p>
+      <h2>Lance les dés au milieu de la table</h2>
+      <p class="chapo">Du d4 au d100, le dé roule au centre de la TV puis affiche son résultat. En lancer secret, il n'apparaît que sur l'écran du MJ.</p>
+      <div class="choix-des" role="group" aria-label="Choisir un dé à lancer">
+        {des.map((d) => (
+          <button type="button" class="bouton creux petit" data-de={d.id} data-faces={d.faces}>{d.id}</button>
+        ))}
+      </div>
+    </div>
+    <div class="piste">
+      <div class="de" id="de" style={`--n:20;background-image:url(${url('des/d20_resultats.webp')});background-position-x:100%`}></div>
+      <p id="de-texte" aria-live="polite">Essaie : clique sur un dé.</p>
+    </div>
+  </section>
+
+  <section class="bloc" id="pack">
+    <p class="sur-titre">Le pack d'images</p>
+    <h2>Un donjon entier, modélisé pour la table</h2>
+    <p class="chapo">Chaque image est rendue en 3D sous Blender, vue de dessus, avec son ombre : 200 px par case, la lumière vient toujours du même côté, tout se raccorde.</p>
+    <dl class="chiffres">
+      {chiffres.map((c) => (
+        <div><dt>{c.n}</dt><dd>{c.t}</dd></div>
+      ))}
+    </dl>
+    <ul class="animes">
+      {animes.map((a) => (
+        <li>
+          <div
+            class:list={['bande', { 'aller-retour': !a.boucle }]}
+            data-bg={url(`anim/${a.id}.webp`)}
+            style={`--n:${a.images};--duree:${a.boucle ? a.images * 0.11 : 1.4}s;aspect-ratio:${a.iw}/${a.ih}`}
+            role="img"
+            aria-label={a.nom}
+          ></div>
+          <span>{a.nom}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="bloc" id="demarrer">
+    <p class="sur-titre">Démarrer</p>
+    <h2>Prêt en quatre étapes</h2>
+    <div class="deux">
+      <ol class="lancement">
+        {lancement.map((l) => <li>{l}</li>)}
+      </ol>
+      <aside class="conseils">
+        <h3>Avant de poser la TV</h3>
+        <ul>
+          <li>Protège la dalle avec une plaque de plexiglas ou de verre trempé.</li>
+          <li>Vérifie que les aérations ne sont pas bouchées une fois la TV à plat.</li>
+          <li>Coupe la mise en veille de la TV et du PC le temps de la partie.</li>
+        </ul>
+        <p class="discret">Il te faut un PC sous Windows, un câble HDMI et Node.js pour la première installation.</p>
+      </aside>
+    </div>
+    <div class="actions">
+      <a class="bouton" href={SITE.depotAppli}>Récupérer l'appli sur GitHub</a>
+      <a class="bouton creux" href={SITE.depotAssets}>Voir le pack d'assets</a>
+    </div>
+  </section>
+</Page>
+
+<script>
+  // --- Pions du haut de page : chacun fait des allers-retours sur son trajet, avec une pause à chaque bout. ---
+  const calme = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pions = [...document.querySelectorAll<HTMLElement>('.pion')].map((el) => ({
+    el,
+    pts: JSON.parse(el.dataset.pts!) as [number, number][],
+    v: Number(el.dataset.v),
+    i: 1,
+    sens: 1,
+    x: 0,
+    y: 0,
+    pause: 0,
+    ligne: 0,
+  }));
+  for (const p of pions) [p.x, p.y] = p.pts[0];
+
+  let avant = performance.now();
+  function pas(maintenant: number) {
+    const dt = Math.min(0.05, (maintenant - avant) / 1000);
+    avant = maintenant;
+    for (const p of pions) {
+      if (p.pause > 0) {
+        p.pause -= dt;
+        p.el.style.setProperty('--ligne', String(p.ligne % 4));
+        continue;
+      }
+      const [cx, cy] = p.pts[p.i];
+      const dx = cx - p.x;
+      const dy = cy - p.y;
+      const d = Math.hypot(dx, dy);
+      const avance = p.v * dt;
+      if (d <= avance) {
+        p.x = cx;
+        p.y = cy;
+        if (p.i + p.sens < 0 || p.i + p.sens >= p.pts.length) {
+          p.sens = -p.sens;
+          p.pause = 2 + Math.random() * 2;
+        }
+        p.i += p.sens;
+      } else {
+        p.x += (dx / d) * avance;
+        p.y += (dy / d) * avance;
+        // Lignes de marche de la planche : 4 = bas, 5 = gauche, 6 = droite, 7 = haut.
+        p.ligne = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 5 : 6) : dy > 0 ? 4 : 7;
+        p.el.style.setProperty('--ligne', String(p.ligne));
+      }
+      p.el.style.left = `${(p.x / 32) * 100}%`;
+      p.el.style.top = `${(p.y / 18) * 100}%`;
+    }
+    requestAnimationFrame(pas);
+  }
+  if (!calme && pions.length) requestAnimationFrame(pas);
+
+  // --- Dés : la bande « lancer » tourne 0,6 s, puis on affiche l'image du résultat tiré. ---
+  const de = document.getElementById('de')!;
+  const texte = document.getElementById('de-texte')!;
+  const dossier = de.style.backgroundImage.replace(/d20_resultats\.webp.*$/, '').replace(/^url\(["']?/, '');
+  let minuterie = 0;
+  document.querySelectorAll<HTMLButtonElement>('[data-de]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const id = b.dataset.de!;
+      const faces = Number(b.dataset.faces);
+      const tire = Math.floor(Math.random() * faces);
+      clearTimeout(minuterie);
+      de.className = 'de';
+      de.style.cssText = `--n:12;--duree:.6s;background-image:url("${dossier}${id}_lancer.webp")`;
+      void de.offsetWidth; // relance l'animation
+      if (!calme) de.classList.add('bande', 'roule');
+      texte.textContent = `Le ${id} roule…`;
+      minuterie = window.setTimeout(
+        () => {
+          de.className = 'de pose';
+          de.style.cssText = `--n:${faces};background-image:url("${dossier}${id}_resultats.webp");background-position-x:${(tire / (faces - 1)) * 100}%`;
+          texte.textContent = id === 'd100' ? 'Le d100 donne les dizaines : lance un d10 pour les unités.' : `${id} : ${tire + 1}`;
+        },
+        calme ? 0 : 900,
+      );
+    }),
+  );
+</script>
+
+<style>
+  .hero { max-width: var(--large); margin: 0 auto; padding: clamp(32px, 5vw, 56px) 20px 40px; text-align: center; }
+  .hero-texte { display: grid; justify-items: center; }
+  .hero .chapo { margin-inline: auto; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 30px; }
+  #demarrer .actions { justify-content: flex-start; }
+
+  /* La TV posée à plat, vue en légère plongée. */
+  .tv-socle { perspective: 1600px; margin: clamp(4px, 1vw, 12px) auto 0; max-width: 1040px; }
+  .tv { transform: rotateX(24deg); transform-origin: 50% 100%; padding: clamp(6px, 1.2vw, 14px); border-radius: 14px; background: linear-gradient(#2b2723, #0b0a09);
+    box-shadow: 0 40px 70px -20px rgb(0 0 0 / .85), 0 0 90px -10px rgb(217 164 65 / .28), inset 0 0 0 1px #3a342d; }
+  .plateau { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 4px; background-size: cover; background-color: #26301c; }
+  .grille { position: absolute; inset: 0; background-image: linear-gradient(to right, rgb(0 0 0 / .22) 1px, transparent 1px), linear-gradient(to bottom, rgb(0 0 0 / .22) 1px, transparent 1px);
+    background-size: calc(100% / 32) calc(100% / 18); }
+  /* Les pions de la démo ont la planche complète 8 × 8 : lignes 0-3 = repos, 4-7 = marche (bas, gauche, droite, haut). */
+  .pion { position: absolute; transform: translate(-50%, -50%); will-change: left, top; background-size: 800% 800%; background-position-y: calc(var(--ligne, 4) / 7 * 100%); }
+  .brouillard { position: absolute; left: 56.25%; top: 11.1%; width: 19%; height: 33.4%; background: #0d0c10; filter: blur(5px);
+    animation: brouillard 14s ease-in-out infinite; }
+  @keyframes brouillard { 0%, 30% { opacity: .96; } 40%, 92% { opacity: 0; } 100% { opacity: .96; } }
+  .legende { margin: 26px auto 0; max-width: 60ch; }
+
+  .captures { margin-top: 40px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
+  .captures figure { margin: 0; }
+  .captures img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--trait2); box-shadow: 0 24px 50px -24px #000; transition: transform .2s; }
+  .captures a:hover img { transform: translateY(-3px); }
+  .captures figcaption { margin-top: 12px; color: var(--texte2); }
+
+  .etapes { list-style: none; padding: 0; margin: 44px 0 0; display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .etapes li { display: grid; gap: 8px; align-content: start; }
+  .etapes p, .cartouche p { color: var(--texte2); font-size: 1rem; }
+  .numero { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--or); border-radius: 50%; font: 600 1.2rem/1 var(--titre); color: var(--or2); margin-bottom: 6px; }
+
+  .cartouches { margin-top: 44px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .cartouche { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 22px; display: grid; gap: 8px; align-content: start; transition: border-color .2s, transform .2s; }
+  .cartouche:hover { border-color: var(--trait2); transform: translateY(-2px); }
+  .cartouche img { width: 72px; height: 72px; object-fit: contain; margin: -6px 0 2px -8px; }
+  .plus { margin-top: 30px; font-size: 1.05rem; }
+
+  .bestiaire { list-style: none; padding: 0; margin: 40px 0 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
+  .bestiaire li { background: radial-gradient(circle at 50% 42%, #3b3327, var(--carte) 70%); border: 1px solid var(--trait); border-radius: 12px; padding: 6px 6px 12px; text-align: center; }
+  .bestiaire span, .animes span { display: block; font-size: .9rem; font-weight: 600; color: var(--texte2); line-height: 1.25; }
+  .suite { margin-top: 30px; }
+
+  .cartes { margin-top: 40px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+  .cartes figure { margin: 0; border: 1px solid var(--trait); border-radius: 12px; overflow: hidden; background: var(--carte); }
+  .cartes img { width: 100%; height: auto; transition: transform .6s; }
+  .cartes figure:hover img { transform: scale(1.04); }
+  .cartes figcaption { padding: 12px 16px; font: 600 1rem/1.2 var(--titre); letter-spacing: .03em; color: #fff; position: relative; background: var(--carte); }
+
+  .deux { display: grid; gap: clamp(24px, 5vw, 60px); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: center; }
+  .choix-des { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .piste { display: grid; justify-items: center; gap: 6px; padding: 28px 20px; border-radius: 16px; border: 1px solid var(--trait); background: radial-gradient(circle at 50% 40%, #3f5a35, #1c2a1a 75%); }
+  .de { width: min(220px, 60vw); aspect-ratio: 1; background-repeat: no-repeat; background-size: calc(var(--n) * 100%) 100%; }
+  .de.pose { animation: pose .25s ease-out; }
+  @keyframes pose { from { transform: scale(1.12); } }
+  #de-texte { font: 600 1.15rem/1.3 var(--titre); color: #fff; min-height: 1.5em; text-align: center; }
+
+  .chiffres { margin: 40px 0 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .chiffres div { border-left: 2px solid var(--or); padding: 4px 0 4px 16px; }
+  .chiffres dt { font: 700 2.4rem/1 var(--titre); color: #fff; }
+  .chiffres dd { margin: 6px 0 0; color: var(--texte2); }
+  .animes { list-style: none; padding: 0; margin: 44px 0 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); align-items: end; }
+  .animes li { text-align: center; display: grid; gap: 8px; justify-items: center; background: #6b6257; border: 1px solid var(--trait2); border-radius: 12px; padding: 12px 8px; height: 100%; align-content: end; }
+  .animes .bande { width: 100%; max-width: 120px; }
+  .animes span { color: #fff; }
+
+  #demarrer .deux { align-items: start; margin-top: 36px; }
+  .lancement { margin: 0; padding: 0; list-style: none; counter-reset: etape; display: grid; gap: 16px; }
+  .lancement li { counter-increment: etape; display: grid; grid-template-columns: 36px 1fr; gap: 14px; align-items: start; }
+  .lancement li::before { content: counter(etape); width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--survol); border: 1px solid var(--trait2); font: 600 1rem/1 var(--titre); color: var(--or2); }
+  .conseils { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 22px; display: grid; gap: 12px; }
+  .conseils ul { margin: 0; padding-left: 20px; color: var(--texte2); display: grid; gap: 6px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brouillard { animation: none; }
+  }
+</style>

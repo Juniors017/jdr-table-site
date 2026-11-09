@@ -1,0 +1,99 @@
+---
+import Page from '../layouts/Page.astro';
+import { url } from '../site';
+import catalogue from '../data/catalogue.json';
+
+const elements = [
+  ...catalogue.figs.map((f) => ({ ...f, genre: 'fig' })),
+  ...catalogue.pieces.map((p) => ({ ...p, genre: 'piece' })),
+];
+const devant = ['Héros', 'PNJ', 'Monstres', 'Animaux'];
+const rang = (c: string) => (devant.includes(c) ? devant.indexOf(c) : devant.length);
+elements.sort((a, b) => rang(a.cat) - rang(b.cat));
+const categories = [...new Set(elements.map((e) => e.cat))];
+const simple = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+---
+
+<Page titre="Catalogue" description={`Les ${elements.length} figurines et objets du pack de la Table de JDR : héros, monstres, sols, murs, mobilier, pièges, sorts.`}>
+  <section class="bloc">
+    <p class="sur-titre">Le catalogue</p>
+    <h1>{elements.length} figurines et objets</h1>
+    <p class="chapo">Tout ce que tu peux poser sur la table. Survole une figurine pour la voir marcher.</p>
+
+    <div class="filtres">
+      <label class="recherche">
+        <span>Chercher</span>
+        <input type="search" id="recherche" placeholder="dragon, coffre, torche…" autocomplete="off" />
+      </label>
+      <div class="puces" role="group" aria-label="Filtrer par catégorie">
+        <button type="button" class="puce" data-cat="" aria-pressed="true">Tout</button>
+        {categories.map((c) => <button type="button" class="puce" data-cat={c} aria-pressed="false">{c}</button>)}
+      </div>
+    </div>
+    <p class="discret" id="compte" aria-live="polite">{elements.length} éléments</p>
+
+    <ul class="grille" id="grille">
+      {elements.map((e) => (
+        <li data-cat={e.cat} data-nom={simple(`${e.nom} ${e.cat}`)}>
+          {e.genre === 'fig' ? (
+            <div class="fig" data-bg={url(`marche/${e.id}.webp`)} role="img" aria-label={e.nom}></div>
+          ) : (
+            <img src={url(`pieces/${e.id}.webp`)} alt={e.nom} loading="lazy" width="120" height="120" />
+          )}
+          <span>{e.nom}</span>
+        </li>
+      ))}
+    </ul>
+    <p class="vide" id="vide" hidden>Rien ne correspond. Essaie un autre mot ou une autre catégorie.</p>
+  </section>
+</Page>
+
+<script>
+  const cases = [...document.querySelectorAll<HTMLElement>('#grille li')];
+  const recherche = document.getElementById('recherche') as HTMLInputElement;
+  const puces = [...document.querySelectorAll<HTMLButtonElement>('.puce')];
+  const compte = document.getElementById('compte')!;
+  const vide = document.getElementById('vide')!;
+  let cat = '';
+
+  function filtrer() {
+    const mot = recherche.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    let n = 0;
+    for (const li of cases) {
+      const visible = (!cat || li.dataset.cat === cat) && (!mot || li.dataset.nom!.includes(mot));
+      li.hidden = !visible;
+      if (visible) n++;
+    }
+    compte.textContent = `${n} élément${n > 1 ? 's' : ''}`;
+    vide.hidden = n > 0;
+  }
+  recherche.addEventListener('input', filtrer);
+  for (const p of puces)
+    p.addEventListener('click', () => {
+      cat = p.dataset.cat!;
+      for (const q of puces) q.setAttribute('aria-pressed', String(q === p));
+      filtrer();
+    });
+</script>
+
+<style>
+  h1 { font-size: clamp(1.9rem, 4vw, 3rem); }
+  .filtres { margin-top: 34px; display: grid; gap: 16px; }
+  .recherche { display: grid; gap: 6px; max-width: 420px; }
+  .recherche span { font: 700 .8rem/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--muet); }
+  .recherche input { padding: 12px 14px; border-radius: 8px; border: 1px solid var(--trait2); background: var(--fond2); color: var(--texte); font: inherit; }
+  .puces { display: flex; flex-wrap: wrap; gap: 8px; }
+  .puce { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--trait2); background: transparent; color: var(--texte2); font: 600 .9rem/1.2 var(--ui); cursor: pointer; }
+  .puce:hover { background: var(--survol); color: #fff; }
+  .puce[aria-pressed="true"] { background: var(--or); border-color: var(--or); color: #1a1408; }
+  #compte { margin-top: 18px; }
+
+  .grille { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+  .grille li { background: #6b6257; border: 1px solid var(--trait2); border-radius: 10px; padding: 8px 6px 10px; display: grid; gap: 6px; justify-items: center; align-content: space-between; text-align: center; }
+  .grille li[hidden] { display: none; }
+  .grille img { width: 100%; aspect-ratio: 1; height: auto; object-fit: contain; }
+  .grille .fig { width: 100%; --ligne: 0; animation-play-state: paused; }
+  .grille li:hover .fig { --ligne: 1; animation-play-state: running; }
+  .grille span { font-size: .82rem; font-weight: 600; line-height: 1.2; color: #fff; overflow-wrap: anywhere; }
+  .vide { margin-top: 30px; color: var(--texte2); }
+</style>

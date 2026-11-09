@@ -1,0 +1,16 @@
+# Pour GitLab Pages (si le dépôt est aussi poussé sur GitLab).
+pages:
+  image: node:24
+  variables:
+    SITE_URL: "https://$CI_PROJECT_ROOT_NAMESPACE.gitlab.io"
+    SITE_BASE: "/$CI_PROJECT_NAME"
+  script:
+    - npm ci
+    - npm run build
+  pages:
+    publish: dist
+  artifacts:
+    paths:
+      - dist
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
