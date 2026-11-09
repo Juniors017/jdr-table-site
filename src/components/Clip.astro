@@ -2,13 +2,22 @@
 // Séquence animée tournée dans l'appli (WebP animé). Si le visiteur a demandé moins d'animations, on montre une image fixe.
 import { url } from '../site';
 
+// Taille de chaque séquence (largeur × hauteur en pixels), pour réserver la place avant le chargement.
+const TAILLES: Record<string, [number, number]> = {
+  createur: [960, 505],
+  scenes: [960, 505],
+  'enligne-joueur': [960, 570],
+  pions: [720, 411],
+  des: [720, 411],
+  'carte-vivante': [720, 411],
+};
+
 interface Props {
   nom: string;
   alt: string;
-  large?: boolean; // capture de toute la fenêtre (960 × 505) au lieu de la carte seule (720 × 405)
 }
-const { nom, alt, large = false } = Astro.props;
-const [w, h] = large ? [960, 505] : [720, 405];
+const { nom, alt } = Astro.props;
+const [w, h] = TAILLES[nom] ?? [720, 405];
 ---
 
 <picture>
@@ -17,5 +26,5 @@ const [w, h] = large ? [960, 505] : [720, 405];
 </picture>
 
 <style>
-  img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: #0b0a09; }
+  img { width: 100%; height: auto; background: #0b0a09; }
 </style>

@@ -4,7 +4,7 @@ const sharp = require('sharp');
 const fs = require('fs'), path = require('path');
 const OUT = path.resolve(process.argv[2]), DEST = path.join(__dirname, '..', '..', 'public', 'clips');
 fs.mkdirSync(DEST, { recursive: true });
-const LARGE = { createur: 960, scenes: 960 };
+const LARGE = { createur: 960, scenes: 960, 'enligne-joueur': 960 };
 (async () => {
   for (const nom of process.argv.slice(3)) {
     const dir = path.join(OUT, nom), f = fs.readdirSync(dir).filter(x => x.endsWith('.png')).sort();

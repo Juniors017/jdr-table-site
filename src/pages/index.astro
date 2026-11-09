@@ -1,6 +1,6 @@
 ---
 import Page from '../layouts/Page.astro';
-import { SITE, url } from '../site';
+import { url } from '../site';
 import catalogue from '../data/catalogue.json';
 import Clip from '../components/Clip.astro';
 
@@ -28,8 +28,8 @@ const fonctions = [
   { clip: 'carte-vivante', t: 'Carte vivante', d: 'Un clic ouvre une porte, un coffre ou le pont-levis, arme un piège, éteint une torche. Eau, lave et feux sont animés.' },
   { clip: 'declencheur', t: 'Déclencheurs et macros', d: "Une zone invisible lance une suite d'actions quand un pion y entre : piège, embuscade, mur qui se referme, scène suivante." },
   { clip: 'effets', t: 'Effets et météo', d: 'Boule de feu, éclair, glace, secousse, pluie, neige, nuit : un clic sur la carte, ou une touche là où est la souris.' },
-  { clip: 'createur', large: true, t: 'Créateur de carte', d: '428 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
-  { clip: 'scenes', large: true, t: 'Scènes et quêtes', d: "Chaque scène garde carte, brouillard, pions et ambiance. Range-les par quête, puis enchaîne l'histoire d'une touche." },
+  { clip: 'createur', t: 'Créateur de carte', d: '428 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
+  { clip: 'scenes', t: 'Scènes et quêtes', d: "Chaque scène garde carte, brouillard, pions et ambiance. Range-les par quête, puis enchaîne l'histoire d'une touche." },
   { clip: 'paroles', t: 'Paroles, annonces et sons', d: "Les PNJ parlent en bulles, une annonce s'affiche sur la TV. Sons intégrés hors ligne, ou ambiances Syrinscape." },
 ];
 
@@ -136,13 +136,47 @@ const lancement = [
     </div>
   </section>
 
+  <section class="bloc" id="joueurs">
+    <p class="sur-titre">Côté joueurs</p>
+    <h2>Autour de la table, ou à distance</h2>
+    <p class="chapo">Les joueurs ne voient que la Vue Table : jamais tes pions cachés, tes déclencheurs ni tes dés secrets.</p>
+    <div class="cotes">
+      <article>
+        <Clip nom="tv-2d" alt="La Vue Table affichée sur la TV : brouillard, héros qui entrent, serveuse qui fait sa ronde" />
+        <h3>Sur la TV, autour de la table</h3>
+        <ul>
+          <li>La carte en plein écran sous les figurines, à la taille exacte de leurs socles.</li>
+          <li>Brouillard de guerre : seules les pièces découvertes apparaissent.</li>
+          <li>Tout bouge : PNJ, portes, feux, effets, météo, dés, bulles de parole.</li>
+          <li>Les annonces s'affichent dans les deux sens, pour ceux assis en face.</li>
+          <li>Affichage 2D, ou 3D avec murs en volume et ombres.</li>
+        </ul>
+      </article>
+      <article>
+        <Clip nom="enligne-joueur" alt="La page d'une joueuse en ligne : elle déplace sa voleuse, écrit dans le récit et lance un d20" />
+        <h3>En ligne, dans un navigateur</h3>
+        <ul>
+          <li>Rien à installer : un lien, un nom, le code de la partie.</li>
+          <li>Le joueur voit la table en direct, comme sur la TV.</li>
+          <li>Il déplace son personnage : clic, glisser ou clavier, Maj pour courir.</li>
+          <li>Il le fait parler : la phrase s'affiche en bulle et dans le récit de la partie.</li>
+          <li>Il lance ses dés, qui roulent sur la table de tous avec son nom.</li>
+        </ul>
+      </article>
+    </div>
+    <p class="suite">
+      <a class="bouton creux" href={url('fonctions/#vue-table')}>La Vue Table en détail</a>
+      <a class="bouton creux" href={url('fonctions/#joueurs-en-ligne')}>Tout ce que font les joueurs en ligne</a>
+    </p>
+  </section>
+
   <section class="bloc" id="fonctions">
     <p class="sur-titre">Les fonctions</p>
     <h2>Tout ce qu'il faut pour mener la partie</h2>
     <div class="cartouches">
       {fonctions.map((f) => (
         <article class="cartouche">
-          <Clip nom={f.clip} alt={`Séquence tournée dans l'appli : ${f.t}`} large={f.large} />
+          <Clip nom={f.clip} alt={`Séquence tournée dans l'appli : ${f.t}`} />
           <h3>{f.t}</h3>
           <p>{f.d}</p>
         </article>
@@ -244,8 +278,8 @@ const lancement = [
       </aside>
     </div>
     <div class="actions">
-      <a class="bouton" href={SITE.depotAppli}>Récupérer l'appli sur GitHub</a>
-      <a class="bouton creux" href={SITE.depotAssets}>Voir le pack d'assets</a>
+      <a class="bouton" href={url('fonctions/')}>Découvrir toutes les fonctions</a>
+      <a class="bouton creux" href={url('catalogue/')}>Parcourir le catalogue</a>
     </div>
   </section>
 </Page>
@@ -358,6 +392,12 @@ const lancement = [
   .captures a:hover img { transform: translateY(-3px); }
   .captures figcaption { margin-top: 12px; color: var(--texte2); }
 
+  .cotes { margin-top: 40px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+  .cotes article { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; overflow: hidden; padding-bottom: 22px; }
+  .cotes h3 { padding: 18px 22px 0; }
+  .cotes ul { margin: 12px 0 0; padding: 0 22px 0 42px; color: var(--texte2); display: grid; gap: 6px; font-size: 1rem; }
+  .suite { display: flex; flex-wrap: wrap; gap: 12px; }
+
   .etapes { list-style: none; padding: 0; margin: 44px 0 0; display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .etapes li { display: grid; gap: 8px; align-content: start; }
   .etapes p, .cartouche p { color: var(--texte2); font-size: 1rem; }
@@ -366,6 +406,7 @@ const lancement = [
   .cartouches { margin-top: 44px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
   .cartouche { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; overflow: hidden; display: grid; gap: 8px; align-content: start; padding-bottom: 20px; transition: border-color .2s, transform .2s; }
   .cartouche:hover { border-color: var(--trait2); transform: translateY(-2px); }
+  .cartouche :global(img) { aspect-ratio: 16 / 9; object-fit: cover; }
   .cartouche h3, .cartouche p { padding: 0 20px; }
   .cartouche h3 { margin-top: 10px; }
   .plus { margin-top: 30px; font-size: 1.05rem; }

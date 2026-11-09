@@ -3,16 +3,17 @@ import Page from '../layouts/Page.astro';
 import { url } from '../site';
 import Clip from '../components/Clip.astro';
 
-// Visite complète de l'appli. Chaque chapitre : une capture réelle de l'écran du MJ (facultative) et ses options.
+// Visite complète de l'appli. Chaque chapitre : des séquences animées et une capture, tournées dans l'appli, puis ses options.
 type Option = [string, string];
 interface Chapitre {
   id: string;
-  mode?: 'Jouer' | 'Préparer';
+  mode?: string;
   titre: string;
   intro: string;
+  clips?: [nom: string, legende: string][];
   capture?: string;
   legende?: string;
-  clips?: [nom: string, legende: string, large?: boolean][]; // séquences animées tournées dans l'appli
+  taille?: [number, number]; // taille de la capture si ce n'est pas 1600 × 841
   options: Option[];
 }
 
@@ -24,60 +25,85 @@ const chapitres: Chapitre[] = [
     capture: 'jouer-pion',
     legende: "Le mode Jouer : la carte au centre, les outils à gauche, le panneau du pion sélectionné à droite, les dés en bas.",
     options: [
+      ['Jouer / Préparer', "Deux modes, deux jeux d'outils et d'onglets. Demander un outil de l'autre mode y bascule tout seul."],
       ['Ouvrir la Vue Table', "Ouvre la vue des joueurs en plein écran sur la TV branchée en HDMI. Un double-clic dessus quitte ou remet le plein écran."],
       ['Calibrer', "Mesure la barre jaune à la règle et tape sa longueur : les cases font alors exactement la taille de tes socles (25,4 mm par défaut)."],
-      ['Vue 2D / 3D', "Choisit l'affichage de la TV : image à plat, ou table en 3D avec murs en volume et figurines posées dessus."],
-      ['Aperçu 3D', "Montre sur ton écran un petit aperçu de la TV en 3D, pour regarder. Tu pilotes toujours sur l'aperçu 2D."],
-      ['Vue joueurs', "Affiche sur ton écran exactement ce que voient les joueurs, sans les pions cachés ni les zones de déclenchement."],
+      ['Vue joueurs', "Affiche sur ton aperçu exactement ce que voient les joueurs : rien de caché ne s'affiche."],
+      ['Voir les déclencheurs', "Montre ou masque les zones de déclenchement sur ton aperçu."],
       ['Grille', "Affiche ou masque la grille. Son opacité et le nombre de cases se règlent dans l'onglet Carte."],
-      ['Zoom de l\'aperçu', "Agrandit ton aperçu sans toucher à ce que montre la TV."],
+      ["Zoom de l'aperçu", "Boutons ou molette : agrandit ton aperçu et le centre sur un pion, sans toucher à ce que montre la TV."],
+      ['Annuler / rétablir', "Deux flèches dans le bandeau du mode Préparer, ou Ctrl+Z et Ctrl+Y."],
+      ['Enregistrer la scène', "Le bandeau indique si la scène est enregistrée ou si elle a des modifications en attente."],
       ['Compteur i/s', "Indique la fluidité de l'affichage. Au-dessus de 50, tout est fluide."],
+      ['Sans installation', "En secours, l'appli s'ouvre aussi d'un double-clic sur index.html dans Edge ou Chrome, en 2D."],
+    ],
+  },
+  {
+    id: 'vue-table',
+    titre: 'La Vue Table : ce que voient les joueurs',
+    intro: "C'est l'image qui s'affiche sur la TV posée à plat, sous les figurines. Elle ne montre que ce que les joueurs ont le droit de voir.",
+    clips: [['tv-2d', "La vraie fenêtre Vue Table : la réserve et la cuisine sont sous le brouillard, les héros entrent, la serveuse fait sa ronde, l'aubergiste les accueille."]],
+    options: [
+      ['Plein écran sur la TV', "La fenêtre se place toute seule sur l'écran externe. Sans TV branchée, elle s'ouvre en fenêtre à glisser où tu veux."],
+      ['Taille réelle', "Une fois la TV calibrée, une case mesure 25,4 mm : les figurines imprimées tombent pile dans les cases."],
+      ['Carte plein écran', "Une carte prête de 32 × 18 cases remplit toute la dalle. Un bouton revient à la taille calibrée."],
+      ['Rien de secret', "Pions cachés, objets masqués, zones de déclenchement, trajets, lignes-murs, dés secrets et notes n'y apparaissent jamais."],
+      ['Tout est animé', "Figurines qui marchent, portes qui s'ouvrent, feux, eau, lave, effets, météo, dés, bulles de parole et annonces."],
+      ['Annonce dans les deux sens', "Le texte s'affiche à l'endroit et à l'envers, pour des joueurs assis face à face autour de la TV."],
+      ['Affichage 2D ou 3D', "En 3D, la table est vue de dessus avec des murs en volume, des ombres et les figurines posées dessus."],
+      ['Aperçu 3D', "Un petit aperçu de la TV en 3D sur ton écran, pour regarder. Tu pilotes toujours sur l'aperçu 2D."],
+      ['Figurines réelles', "L'appli ne voit pas les vraies figurines : pose le pion numérique de chaque joueur et déplace-le avec sa figurine."],
     ],
   },
   {
     id: 'pions',
-    mode: 'Jouer',
+    mode: 'Mode Jouer',
     titre: 'Créatures et PNJ',
     intro: '156 figurines animées : héros, PNJ de ville, monstres, animaux, attelages. Chacune se place, se cache, se déplace seule et réagit aux coups.',
-    capture: 'prep-pnj',
-    legende: "L'onglet PNJ : la liste des pions de la scène, la créature à placer, puis les actions du pion sélectionné.",
     clips: [
       ['pions', 'Deux squelettes cachés apparaissent dans la fumée, prennent des coups, puis tombent.'],
       ['trajets', "Sur l'écran du MJ : le trajet en pointillés de la serveuse et les zones d'errance du chat, de l'enfant et de l'aubergiste."],
       ['paroles', "Les PNJ parlent en bulles, puis une annonce s'affiche sur la table."],
     ],
+    capture: 'prep-pnj',
+    legende: "L'onglet PNJ : la liste des pions de la scène, la créature à placer, puis les actions du pion sélectionné.",
     options: [
       ['Placer', "Choisis la créature, son nom, sa taille (1 case ou plus) et sa teinte, puis pose-la sur la carte."],
+      ['Renommer', "Le nom d'un pion se change à tout moment, même en pleine partie."],
       ['Caché', "Le pion n'est visible que sur ton écran. Quand tu le montres, il apparaît dans un nuage de fumée."],
       ['Cercle', "Ajoute un anneau de couleur sous le pion pour le repérer : pratique pour distinguer les joueurs."],
       ['Touché / Vaincu', "Joue l'effet et le son du coup reçu ou de la défaite."],
       ['À terre', "Un héros à 0 PV s'affiche couché, son arme au sol."],
       ['États', "Marqueurs à poser sur un pion : empoisonné, béni, épuisement, pastilles numérotées de 1 à 10…"],
-      ['Tracer un trajet', "Dessine le chemin à la souris. Le pion le suit une fois, en aller-retour ou en boucle, à la vitesse choisie."],
+      ['Tracer un trajet', "Dessine le chemin à la souris. Le pion le suit une fois, en aller-retour ou en boucle, en vitesse lente, normale ou rapide."],
       ['Errance', "Trace un rectangle ou un cercle : le PNJ s'y promène au hasard. Un simple clic lui donne 3 cases autour de lui."],
       ['Trajet aléatoire', "Le pion avance tout seul de case libre en case libre, avec des pauses. Coché d'office pour les animaux et les monstres."],
       ['Contournement', "Les PNJ évitent murs, portes fermées, lave et meubles. Toi, tu peux toujours les glisser où tu veux."],
-      ['Parler', "Fait dire une réplique au pion dans une bulle. Chaque type de PNJ a ses répliques, et peut bavarder tout seul de temps en temps."],
+      ['Répliques', "Chaque type de figurine a ses répliques, que tu complètes. Entre étoiles, c'est une attitude : *se gratte le nez*."],
+      ['Faire dire', "Choisis une réplique à faire dire tout de suite, ou une au hasard : elle s'affiche en bulle au-dessus du pion."],
+      ['Bavardage', "Un PNJ peut parler tout seul : rarement, parfois ou souvent."],
       ['Sons du pion', "Un son d'apparition, de coup reçu et de défaite, choisis parmi tes favoris."],
       ['Sélection multiple', "Maj+clic ou rectangle : déplace ou règle plusieurs pions d'un coup."],
-      ['Contrôlé par', "En partie en ligne, confie un pion à un joueur : il le déplace depuis son navigateur."],
+      ['Suivre le groupe', "Un pion peut passer tout seul dans la scène suivante, la précédente, ou les deux."],
+      ['Contrôlé par', "En partie en ligne, confie un pion à un joueur : il le déplace et parle par sa bouche."],
     ],
   },
   {
     id: 'brouillard',
-    mode: 'Jouer',
+    mode: 'Mode Jouer',
     titre: 'Brouillard, effets et météo',
     intro: "Ce que les joueurs découvrent, et ce qui leur tombe dessus.",
-    capture: 'jouer-ambiance',
-    legende: "L'onglet Ambiance sur la Crypte du Roi Oublié : météo, lumière et sons. Les zones en pointillés orange sont des déclencheurs, visibles du MJ seul.",
     clips: [
       ['brouillard', 'Le brouillard se lève au pinceau, pièce après pièce.'],
       ['effets', "Les effets, lancés l'un après l'autre dans la crypte."],
       ['meteo', 'Pluie, neige, puis nuit, braises et brume sur la clairière.'],
       ['carte-vivante', "La porte de la réserve et la trappe s'ouvrent et se referment d'un clic."],
     ],
+    capture: 'jouer-ambiance',
+    legende: "L'onglet Ambiance sur la Crypte du Roi Oublié : météo, lumière et sons. Les zones en pointillés orange sont des déclencheurs, visibles du MJ seul.",
     options: [
       ['Révéler / Cacher', "Peins le brouillard de guerre au pinceau pour découvrir la carte pièce par pièce."],
+      ['Tout cacher / tout révéler', "Couvre ou découvre toute la carte d'un coup, ou coupe le brouillard."],
       ['Déplacer la carte', "Glisse l'image de carte, zoome à la molette. Objets, murs et pions posés dessus la suivent."],
       ['Effets', "Boule de feu, éclair, soin, glace, poison, fumée, tremblement, flash d'orage : choisis puis clique sur la carte, autant de fois que tu veux."],
       ['Météo et lumière', "Pluie, neige, brume, braises, nuit : à activer et combiner."],
@@ -87,27 +113,28 @@ const chapitres: Chapitre[] = [
   },
   {
     id: 'des',
-    mode: 'Jouer',
+    mode: 'Mode Jouer',
     titre: 'Dés',
     intro: 'La barre du bas lance les dés sans quitter la carte des yeux.',
     clips: [['des', 'Un d20 puis un d6 roulent au centre de la table.']],
     options: [
       ['d4 à d100', "Le dé roule au centre de la table puis affiche son résultat quelques secondes."],
-      ['Bonus', "Ajoute un modificateur au résultat."],
+      ['Bonus', "Un modificateur s'ajoute au total, affiché chez toi seulement : la TV montre le dé."],
       ['Lancer secret', "Le dé n'apparaît que sur ton écran."],
-      ['Historique', "Le résultat s'inscrit aussi dans le panneau."],
+      ['Historique', "Le résultat et les jets précédents s'inscrivent dans le panneau."],
     ],
   },
   {
     id: 'carte',
-    mode: 'Préparer',
+    mode: 'Mode Préparer',
     titre: 'Créateur de carte',
     intro: '428 objets du pack à peindre sur la grille : sols, raccords de terrain, murs, mobilier, décor, nature, bâtiments, navires, trésors, armes, pièges, sorts.',
+    clips: [['createur', "Une auberge construite de zéro : herbe, plancher, murs, porte, mobilier."]],
     capture: 'prep-materiaux',
     legende: 'Le mode Préparer : la liste des scènes à gauche, les matériaux à droite, les raccourcis en bas.',
-    clips: [['createur', "Une auberge construite de zéro : herbe, plancher, murs, porte, mobilier.", true]],
     options: [
       ['Sols', "Glisse pour peindre des tuiles raccordables. Pinceau de 1, 2, 3 ou 5 cases, ou remplissage de tout le vide."],
+      ['Raccords de terrain', "Rivière, plage, berge, chemin, gouffre : des tuiles qui se raccordent à l'herbe, au sable, à l'eau et à la roche."],
       ['Murs', "Ils suivent les lignes de la grille. Portes, grilles et clôtures se posent de la même façon."],
       ['Objets et décor', "Ils se calent sur les cases. R les pivote avant de les poser."],
       ['Recherche', "Un champ cherche dans tout le pack par nom."],
@@ -115,15 +142,17 @@ const chapitres: Chapitre[] = [
       ['Pivoter, dupliquer, grouper', "R, Ctrl+D, Ctrl+G. Devant / derrière règle l'ordre d'empilement."],
       ['Verrouiller', "L verrouille une pièce pour ne plus la déplacer par erreur. Alt+clic la reprend quand même."],
       ['Masquer aux joueurs', "H cache une pièce de la TV : un passage secret, un trésor, un piège à faire apparaître plus tard."],
-      ['Annuler / rétablir', "Ctrl+Z et Ctrl+Y."],
+      ['Bloque les PNJ ou non', "Murs, portes fermées, meubles et lave bloquent les PNJ ; tapis, trésors et escaliers non. Ça se change objet par objet."],
       ['Gomme', "Efface pièces et lignes-murs."],
       ['Ligne-mur et cercle-mur', "Sur une carte en photo, trace des lignes ou des cercles invisibles pour les joueurs : ils bloquent les PNJ comme de vrais murs."],
       ['Objets animés', "Braseros, torches, eau, lave, portail : animés en 2D comme en 3D."],
+      ['Gabarits de sorts', "Sphère, cône, ligne et cube translucides, à poser pour montrer une zone d'effet."],
+      ['Objet qui suit le groupe', "Comme un pion, un objet peut passer dans la scène suivante ou précédente."],
     ],
   },
   {
     id: 'grille',
-    mode: 'Préparer',
+    mode: 'Mode Préparer',
     titre: 'Carte, grille et calques',
     intro: "Charge ta propre image, règle la grille, range tes cartes et garde la main sur tout ce qui est posé.",
     capture: 'prep-calques',
@@ -134,30 +163,33 @@ const chapitres: Chapitre[] = [
       ['Opacité de la grille', "De discrète à bien visible."],
       ['Mes cartes', "Garde une carte dans le dossier cartes pour la réutiliser dans d'autres scènes."],
       ['Cartes prêtes à jouer', "Taverne du Dragon assoupi, Crypte des rois oubliés, Clairière du vieux chêne, Port de Haute-Mer : 32 × 18 cases, modifiables."],
+      ['Remplir / vider', "Remplit la carte en dalles de pierre, ou vide la carte en cours pour repartir de zéro."],
       ['Calques', "Sols, murs, objets, décor, PNJ, lignes-murs, déclencheurs : clic pour sélectionner, cadenas pour verrouiller, œil pour montrer aux joueurs."],
       ['Tout verrouiller', "Une fois la carte finie, fige tout d'un clic."],
     ],
   },
   {
     id: 'declencheurs',
-    mode: 'Préparer',
+    mode: 'Mode Préparer',
     titre: 'Déclencheurs et macros',
     intro: "Une zone invisible pour les joueurs lance une suite d'actions quand un pion y arrive : piège, embuscade, porte qui claque, éboulement.",
+    clips: [['declencheur', "Le chevalier entre dans la réserve : la trappe s'ouvre, les rats cachés apparaissent, l'annonce s'affiche dans les deux sens."]],
     capture: 'prep-declencheurs',
     legende: "Deux déclencheurs sur la taverne : « Réserve : les rats ! » et « En route vers la forêt ».",
-    clips: [['declencheur', "Le chevalier entre dans la réserve : la trappe s'ouvre, les rats cachés apparaissent, l'annonce s'affiche dans les deux sens."]],
     options: [
       ['Tracer une zone', "Sur la carte, ou directement sur un objet : la zone est alors reliée à lui."],
       ['Qui', "Tous les pions, les héros, les PNJ et monstres, les PNJ de ville, ou un pion précis."],
       ['Quand', "Une seule fois, à chaque entrée ou à chaque sortie."],
       ['Actions', "Effet, son, annonce sur la TV, pion touché, état sur le pion, météo, secousse, flash, lancer de dé, scène suivante."],
       ['Agir sur la carte', "Activer une porte, un coffre, un piège ou une lumière, faire apparaître une pièce masquée, poser un élément du catalogue, révéler le brouillard."],
-      ['Créatures', "Faire apparaître une créature ou montrer un pion caché."],
+      ['Créatures', "Faire apparaître une créature, montrer un pion caché, ou faire tomber un pion."],
       ['Délais', "Chaque action a son délai, et peut disparaître toute seule après un temps donné."],
       ['Mouvements', "Déplacer un pion ou faire voler et tournoyer un objet : au hasard, dans une zone, ou sur un tracé."],
+      ['Objets lancés', "Un objet peut être lancé sur une cible, avec d'autres actions au moment de l'impact."],
       ['Lieux fixes', "Désigne un ou plusieurs endroits de la carte où l'action se produit, quel que soit le pion qui déclenche."],
       ['Macros', "Garde une suite d'actions sous un nom pour la réutiliser. Une macro modifiée change sur tous ses déclencheurs, et peut en lancer une autre."],
       ['Essayer et réarmer', "Teste un déclencheur sans l'user. Tout réarmer remet les objets en place."],
+      ['Suspendre', "Une case coupe tous les déclencheurs, le temps de construire par exemple."],
       ['Journal', "Quand un déclencheur part, sa zone clignote et le panneau dit qui l'a déclenché."],
     ],
   },
@@ -165,16 +197,17 @@ const chapitres: Chapitre[] = [
     id: 'scenes',
     titre: 'Scènes, quêtes et histoire',
     intro: "Une scène garde la carte, le brouillard, les pions, leurs trajets, les déclencheurs et l'ambiance sonore.",
+    clips: [['scenes', 'Quatre scènes de la quête enchaînées avec la flèche du bandeau.']],
     capture: 'jouer-histoire',
     legende: "L'onglet Histoire affiche le texte de la quête et suit la scène en cours.",
-    clips: [['scenes', 'Quatre scènes de la quête enchaînées avec la flèche du bandeau.', true]],
     options: [
       ['Quêtes', "Un dossier par quête, avec ses scènes dans l'ordre de l'histoire. Glisse une scène pour la réordonner."],
+      ['Nouvelle scène, nouvelle quête', "Crée-les depuis le panneau Scénario. Un bouton ouvre le dossier des scènes pour renommer ou ranger."],
       ['Enchaîner', "Les flèches du bandeau, ou une touche, passent à la scène précédente ou suivante."],
       ['Pions qui suivent', "Un pion ou un objet peut suivre le groupe vers la scène suivante ou précédente."],
       ['Histoire pour le MJ', "Un fichier texte par quête, affiché dans l'appli, qui défile jusqu'à la scène en cours."],
-      ['Scène modifiée', "Le bandeau indique si la scène est enregistrée ou non."],
-      ['Quêtes d\'exemple', "Donjons et Chenapans, L'Île du Soleil d'Or et Le Donjon de Krapoulax : 22 scènes prêtes, avec leur histoire."],
+      ['Histoire sur un autre écran', "L'histoire s'ouvre dans sa propre fenêtre, à glisser sur un troisième écran. Jamais sur la TV."],
+      ["Quêtes d'exemple", "Donjons et Chenapans, L'Île du Soleil d'Or et Le Donjon de Krapoulax : 22 scènes prêtes, avec leur histoire."],
     ],
   },
   {
@@ -182,28 +215,54 @@ const chapitres: Chapitre[] = [
     titre: 'Sons et ambiances',
     intro: "L'appli a ses propres sons et marche sans internet. Avec un compte Syrinscape, elle pilote aussi son lecteur.",
     options: [
-      ['Sons intégrés', "Effets, météo et portes ont un son d'origine, sans rien installer."],
+      ['Sons intégrés', "Effets, météo, portes et dés ont un son d'origine, sans rien installer."],
       ['Syrinscape', "Colle ton jeton : effets, météo et portes passent par l'Online Player de Syrinscape."],
-      ['Ambiances complètes', "Taverne, donjon, forêt… Cherche en français ou en anglais et lance d'un clic."],
+      ['Bibliothèque de sons', "Cherche en français ou en anglais : taverne, donjon, forêt… et lance d'un clic. La science-fiction et les jeux de société s'affichent sur demande."],
       ['Favoris', "Marque un son pour le retrouver vite, le donner à un pion ou à une touche."],
       ['Associer', "Change le son joué par chaque événement de l'appli."],
+      ['Importer une liste', "Avec un abonnement Syrinscape, importe ta liste de liens (fichier CSV)."],
+      ['Tout arrêter', "Un bouton coupe l'ambiance, un autre tous les sons."],
       ['Ambiance de la scène', "L'ambiance en cours est enregistrée avec la scène et redémarre quand tu la recharges."],
     ],
   },
   {
     id: 'enligne',
-    titre: 'Partie en ligne',
-    intro: "Des joueurs à distance voient la Vue Table en direct dans leur navigateur.",
-    capture: 'jouer-joueurs',
-    legende: "L'onglet Joueurs : annonce sur la TV et partie en ligne.",
+    titre: 'Partie en ligne : côté MJ',
+    intro: "Des joueurs à distance voient la Vue Table en direct dans leur navigateur, pendant que tu mènes la partie comme d'habitude.",
+    capture: 'enligne-mj',
+    legende: "L'onglet Joueurs pendant une partie en ligne : une joueuse connectée, le lien à donner, et le journal de ses dés et de ses paroles.",
     options: [
-      ['Ouvrir la partie', "Les joueurs rejoignent la table depuis un simple navigateur."],
-      ['Rien de secret ne part', "Pions cachés, objets masqués, déclencheurs et dés secrets restent chez toi."],
-      ['Pions des joueurs', "Chaque joueur déplace le pion que tu lui confies, en marchant ou en courant. Tu peux bloquer les déplacements à tout moment."],
-      ['Faire parler son personnage', "Chaque joueur écrit ce que dit ou fait son personnage : la réplique s'affiche en bulle au-dessus de son pion, pour toute la table."],
-      ['Dés des joueurs', "Un joueur lance ses dés depuis son navigateur : le dé roule sur la table avec son nom dessous."],
-      ['Écrire aux joueurs', "Envoie un récit, au besoin par la bouche du pion sélectionné."],
-      ['Journal', "Les dés et les paroles des joueurs s'inscrivent aussi dans ton panneau."],
+      ['Ouvrir la partie', "Choisis un code de partie, par exemple DRAGON-42, et un mot de passe si tu veux."],
+      ['Lien à donner', "L'appli fabrique le lien des joueurs : un bouton le copie."],
+      ['Rien de secret ne part', "Pions cachés, objets masqués, déclencheurs, lignes-murs et dés secrets restent chez toi."],
+      ['Confier un pion', "Dans le panneau d'un pion, « Contrôlé par » le donne à un joueur connecté. Un joueur peut en avoir plusieurs."],
+      ['Bloquer les déplacements', "Une case fige les pions des joueurs, le temps d'un combat ou d'une cinématique."],
+      ['Écrire aux joueurs', "Envoie un récit dans le fil, au besoin par la bouche du pion sélectionné : il parle alors en bulle."],
+      ['Journal des joueurs', "Leurs dés, leurs paroles et leurs changements de nom s'inscrivent dans ton panneau."],
+      ['Pions restés en arrière', "Quand tu changes de scène, les personnages restés dans l'autre sont listés : « Faire venir » les pose près du groupe."],
+      ['Son partagé', "Colle ton lien Share Audio de Syrinscape : les joueurs entendent l'ambiance de la partie."],
+      ['Serveur relais', "Un petit serveur fourni avec l'appli relaie la table. Il ne garde rien sur disque : la partie n'existe que tant que tu l'as ouverte."],
+    ],
+  },
+  {
+    id: 'joueurs-en-ligne',
+    titre: 'Partie en ligne : côté joueurs',
+    intro: "Rien à installer : le joueur ouvre le lien du MJ dans son navigateur, tape son nom et entre dans la partie.",
+    clips: [['enligne-joueur', "La page d'une joueuse : sa voleuse marche jusqu'à la case cliquée, elle écrit ce que fait son personnage, lance un d20, et l'aubergiste lui répond."]],
+    capture: 'enligne-entree',
+    taille: [1280, 760],
+    legende: "L'entrée dans la partie : un nom, le code donné par le MJ, et le mot de passe s'il y en a un.",
+    options: [
+      ['Voir la table en direct', "Le joueur voit exactement la Vue Table : carte, brouillard, pions, effets, météo, dés, bulles et annonces."],
+      ['Déplacer son personnage', "Un clic là où aller, ou glisser son pion. Flèches ou ZQSD au clavier, Maj pour courir."],
+      ['Les murs comptent', "Son personnage contourne murs et meubles comme les PNJ : pas de passe-muraille."],
+      ['Parler et agir', "Il écrit ce que dit ou fait son personnage : la phrase s'affiche en bulle au-dessus de son pion et dans le récit."],
+      ['Récit de la partie', "Un fil partagé garde les paroles des joueurs et du MJ. Il se replie pour laisser toute la place à la table."],
+      ['Lancer ses dés', "d4 à d100 : le dé roule sur la table de tout le monde, avec son nom dessous."],
+      ['Plusieurs personnages', "Si le MJ lui en confie plusieurs, un bouton par personnage choisit celui qu'il dirige."],
+      ['Renommer son personnage', "Le garde anonyme devient le héros du joueur."],
+      ['Entendre la partie', "Un lien active le son partagé par le MJ, et les pas des personnages s'entendent."],
+      ['Coupures gérées', "La page se reconnecte toute seule. Si le MJ s'absente, la table se met en pause et reprend à son retour."],
     ],
   },
   {
@@ -212,15 +271,16 @@ const chapitres: Chapitre[] = [
     intro: "Chaque action de l'appli peut recevoir sa touche.",
     options: [
       ['Assigner', "Choisis une action, clique « Touche… », appuie sur la touche voulue."],
+      ['Chercher une action', "Ctrl+K cherche une action par son nom."],
       ['Effets', "Ils partent là où se trouve la souris."],
       ['Tout est couvert', "Ambiance, annonce, scènes, dés, actions du pion, outils, créateur de carte, grille, brouillard, Vue Table, sons favoris, macros."],
-      ['Outils', "Les chiffres 1 à 8 changent d'outil. Échap ou clic droit revient aux pions."],
+      ['Outils', "Les chiffres changent d'outil. Échap ou clic droit revient aux pions."],
     ],
   },
 ];
 ---
 
-<Page titre="Toutes les fonctions" description="Visite complète de la Table de JDR : pions, brouillard, créateur de carte, déclencheurs, scènes, sons, partie en ligne, raccourcis.">
+<Page titre="Toutes les fonctions" description="Visite complète de la Table de JDR : Vue Table sur la TV, pions, brouillard, créateur de carte, déclencheurs, scènes, sons, partie en ligne côté MJ et côté joueurs, raccourcis.">
   <section class="bloc tete">
     <p class="sur-titre">La visite complète</p>
     <h1>Toutes les fonctions de l'appli</h1>
@@ -232,23 +292,23 @@ const chapitres: Chapitre[] = [
 
   {chapitres.map((c) => (
     <section class="bloc" id={c.id}>
-      {c.mode && <p class="sur-titre">Mode {c.mode}</p>}
+      {c.mode && <p class="sur-titre">{c.mode}</p>}
       <h2>{c.titre}</h2>
       <p class="chapo">{c.intro}</p>
       {c.clips && (
         <div class:list={['clips', { seul: c.clips.length === 1 }]}>
-          {c.clips.map(([nom, legende, large]) => (
+          {c.clips.map(([nom, legende]) => (
             <figure>
-              <Clip nom={nom} alt={legende} large={large} />
+              <Clip nom={nom} alt={legende} />
               <figcaption>{legende}</figcaption>
             </figure>
           ))}
         </div>
       )}
       {c.capture && (
-        <figure class="capture">
+        <figure class:list={['capture', { petite: !!c.taille }]}>
           <a href={url(`captures/${c.capture}.webp`)}>
-            <img src={url(`captures/${c.capture}.webp`)} alt={c.legende} width="1600" height="841" loading="lazy" />
+            <img src={url(`captures/${c.capture}.webp`)} alt={c.legende} width={c.taille?.[0] ?? 1600} height={c.taille?.[1] ?? 841} loading="lazy" />
           </a>
           <figcaption>{c.legende}</figcaption>
         </figure>
@@ -265,10 +325,10 @@ const chapitres: Chapitre[] = [
   ))}
 
   <section class="bloc fin">
-    <h2>Envie d'essayer ?</h2>
+    <h2>Envie d'en voir plus ?</h2>
     <div class="actions">
-      <a class="bouton" href={url('#demarrer')}>Démarrer une partie</a>
-      <a class="bouton creux" href={url('catalogue/')}>Parcourir le catalogue</a>
+      <a class="bouton" href={url('catalogue/')}>Parcourir le catalogue</a>
+      <a class="bouton creux" href={url('#demarrer')}>Démarrer une partie</a>
     </div>
   </section>
 </Page>
@@ -287,6 +347,7 @@ const chapitres: Chapitre[] = [
   .clips figcaption { margin-top: 8px; color: var(--muet); font-size: .92rem; }
 
   .capture { margin: 34px 0 0; }
+  .capture.petite { max-width: 860px; }
   .capture img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--trait2); box-shadow: 0 24px 50px -24px #000; }
   .capture figcaption { margin-top: 10px; color: var(--muet); font-size: .92rem; }
 

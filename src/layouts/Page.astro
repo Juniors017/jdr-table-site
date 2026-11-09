@@ -41,6 +41,7 @@ const image = new URL(url('cartes/taverne.webp'), Astro.site);
       </a>
       <nav aria-label="Navigation principale">
         <a href={url('fonctions/')}>Fonctions</a>
+        <a href={url('#joueurs')}>Joueurs</a>
         <a href={url('#bestiaire')}>Bestiaire</a>
         <a href={url('#cartes')}>Cartes</a>
         <a href={url('catalogue/')}>Catalogue</a>
@@ -53,7 +54,6 @@ const image = new URL(url('cartes/taverne.webp'), Astro.site);
     <footer class="pied">
       <p>
         <strong>{SITE.nom}</strong> — appli et images créées par Juniors017.
-        <a href={SITE.depotAppli}>Code de l'appli</a> · <a href={SITE.depotAssets}>Pack d'assets</a>
       </p>
       <p class="discret">© 2026 Juniors017. Images et cartes : tous droits réservés, reproduction et réutilisation interdites sans accord.</p>
       <p class="discret">
