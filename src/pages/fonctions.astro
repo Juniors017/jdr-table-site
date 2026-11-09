@@ -1,6 +1,7 @@
 ---
 import Page from '../layouts/Page.astro';
 import { url } from '../site';
+import Clip from '../components/Clip.astro';
 
 // Visite complète de l'appli. Chaque chapitre : une capture réelle de l'écran du MJ (facultative) et ses options.
 type Option = [string, string];
@@ -11,6 +12,7 @@ interface Chapitre {
   intro: string;
   capture?: string;
   legende?: string;
+  clips?: [nom: string, legende: string, large?: boolean][]; // séquences animées tournées dans l'appli
   options: Option[];
 }
 
@@ -39,6 +41,11 @@ const chapitres: Chapitre[] = [
     intro: '156 figurines animées : héros, PNJ de ville, monstres, animaux, attelages. Chacune se place, se cache, se déplace seule et réagit aux coups.',
     capture: 'prep-pnj',
     legende: "L'onglet PNJ : la liste des pions de la scène, la créature à placer, puis les actions du pion sélectionné.",
+    clips: [
+      ['pions', 'Deux squelettes cachés apparaissent dans la fumée, prennent des coups, puis tombent.'],
+      ['trajets', "Sur l'écran du MJ : le trajet en pointillés de la serveuse et les zones d'errance du chat, de l'enfant et de l'aubergiste."],
+      ['paroles', "Les PNJ parlent en bulles, puis une annonce s'affiche sur la table."],
+    ],
     options: [
       ['Placer', "Choisis la créature, son nom, sa taille (1 case ou plus) et sa teinte, puis pose-la sur la carte."],
       ['Caché', "Le pion n'est visible que sur ton écran. Quand tu le montres, il apparaît dans un nuage de fumée."],
@@ -63,6 +70,12 @@ const chapitres: Chapitre[] = [
     intro: "Ce que les joueurs découvrent, et ce qui leur tombe dessus.",
     capture: 'jouer-ambiance',
     legende: "L'onglet Ambiance sur la Crypte du Roi Oublié : météo, lumière et sons. Les zones en pointillés orange sont des déclencheurs, visibles du MJ seul.",
+    clips: [
+      ['brouillard', 'Le brouillard se lève au pinceau, pièce après pièce.'],
+      ['effets', "Les effets, lancés l'un après l'autre dans la crypte."],
+      ['meteo', 'Pluie, neige, puis nuit, braises et brume sur la clairière.'],
+      ['carte-vivante', "La porte de la réserve et la trappe s'ouvrent et se referment d'un clic."],
+    ],
     options: [
       ['Révéler / Cacher', "Peins le brouillard de guerre au pinceau pour découvrir la carte pièce par pièce."],
       ['Déplacer la carte', "Glisse l'image de carte, zoome à la molette. Objets, murs et pions posés dessus la suivent."],
@@ -77,6 +90,7 @@ const chapitres: Chapitre[] = [
     mode: 'Jouer',
     titre: 'Dés',
     intro: 'La barre du bas lance les dés sans quitter la carte des yeux.',
+    clips: [['des', 'Un d20 puis un d6 roulent au centre de la table.']],
     options: [
       ['d4 à d100', "Le dé roule au centre de la table puis affiche son résultat quelques secondes."],
       ['Bonus', "Ajoute un modificateur au résultat."],
@@ -91,6 +105,7 @@ const chapitres: Chapitre[] = [
     intro: '428 objets du pack à peindre sur la grille : sols, raccords de terrain, murs, mobilier, décor, nature, bâtiments, navires, trésors, armes, pièges, sorts.',
     capture: 'prep-materiaux',
     legende: 'Le mode Préparer : la liste des scènes à gauche, les matériaux à droite, les raccourcis en bas.',
+    clips: [['createur', "Une auberge construite de zéro : herbe, plancher, murs, porte, mobilier.", true]],
     options: [
       ['Sols', "Glisse pour peindre des tuiles raccordables. Pinceau de 1, 2, 3 ou 5 cases, ou remplissage de tout le vide."],
       ['Murs', "Ils suivent les lignes de la grille. Portes, grilles et clôtures se posent de la même façon."],
@@ -130,6 +145,7 @@ const chapitres: Chapitre[] = [
     intro: "Une zone invisible pour les joueurs lance une suite d'actions quand un pion y arrive : piège, embuscade, porte qui claque, éboulement.",
     capture: 'prep-declencheurs',
     legende: "Deux déclencheurs sur la taverne : « Réserve : les rats ! » et « En route vers la forêt ».",
+    clips: [['declencheur', "Le chevalier entre dans la réserve : la trappe s'ouvre, les rats cachés apparaissent, l'annonce s'affiche dans les deux sens."]],
     options: [
       ['Tracer une zone', "Sur la carte, ou directement sur un objet : la zone est alors reliée à lui."],
       ['Qui', "Tous les pions, les héros, les PNJ et monstres, les PNJ de ville, ou un pion précis."],
@@ -151,6 +167,7 @@ const chapitres: Chapitre[] = [
     intro: "Une scène garde la carte, le brouillard, les pions, leurs trajets, les déclencheurs et l'ambiance sonore.",
     capture: 'jouer-histoire',
     legende: "L'onglet Histoire affiche le texte de la quête et suit la scène en cours.",
+    clips: [['scenes', 'Quatre scènes de la quête enchaînées avec la flèche du bandeau.', true]],
     options: [
       ['Quêtes', "Un dossier par quête, avec ses scènes dans l'ordre de l'histoire. Glisse une scène pour la réordonner."],
       ['Enchaîner', "Les flèches du bandeau, ou une touche, passent à la scène précédente ou suivante."],
@@ -182,9 +199,11 @@ const chapitres: Chapitre[] = [
     options: [
       ['Ouvrir la partie', "Les joueurs rejoignent la table depuis un simple navigateur."],
       ['Rien de secret ne part', "Pions cachés, objets masqués, déclencheurs et dés secrets restent chez toi."],
-      ['Pions des joueurs', "Chaque joueur déplace le pion que tu lui confies. Tu peux bloquer les déplacements à tout moment."],
+      ['Pions des joueurs', "Chaque joueur déplace le pion que tu lui confies, en marchant ou en courant. Tu peux bloquer les déplacements à tout moment."],
+      ['Faire parler son personnage', "Chaque joueur écrit ce que dit ou fait son personnage : la réplique s'affiche en bulle au-dessus de son pion, pour toute la table."],
+      ['Dés des joueurs', "Un joueur lance ses dés depuis son navigateur : le dé roule sur la table avec son nom dessous."],
       ['Écrire aux joueurs', "Envoie un récit, au besoin par la bouche du pion sélectionné."],
-      ['Journal', "Les dés et paroles des joueurs s'inscrivent dans ton panneau."],
+      ['Journal', "Les dés et les paroles des joueurs s'inscrivent aussi dans ton panneau."],
     ],
   },
   {
@@ -205,7 +224,7 @@ const chapitres: Chapitre[] = [
   <section class="bloc tete">
     <p class="sur-titre">La visite complète</p>
     <h1>Toutes les fonctions de l'appli</h1>
-    <p class="chapo">Chaque panneau, chaque outil, avec de vraies captures de l'écran du MJ.</p>
+    <p class="chapo">Chaque panneau, chaque outil, avec des séquences et des captures tournées dans l'appli.</p>
     <nav class="sommaire" aria-label="Sommaire">
       {chapitres.map((c) => <a href={`#${c.id}`}>{c.titre}</a>)}
     </nav>
@@ -216,6 +235,16 @@ const chapitres: Chapitre[] = [
       {c.mode && <p class="sur-titre">Mode {c.mode}</p>}
       <h2>{c.titre}</h2>
       <p class="chapo">{c.intro}</p>
+      {c.clips && (
+        <div class:list={['clips', { seul: c.clips.length === 1 }]}>
+          {c.clips.map(([nom, legende, large]) => (
+            <figure>
+              <Clip nom={nom} alt={legende} large={large} />
+              <figcaption>{legende}</figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
       {c.capture && (
         <figure class="capture">
           <a href={url(`captures/${c.capture}.webp`)}>
@@ -250,6 +279,12 @@ const chapitres: Chapitre[] = [
   .sommaire { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
   .sommaire a { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--trait2); color: var(--texte2); font: 600 .9rem/1.2 var(--ui); text-decoration: none; }
   .sommaire a:hover { background: var(--survol); color: #fff; }
+
+  .clips { margin-top: 34px; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+  .clips.seul { grid-template-columns: minmax(0, 860px); }
+  .clips figure { margin: 0; }
+  .clips :global(img) { border-radius: 10px; border: 1px solid var(--trait2); }
+  .clips figcaption { margin-top: 8px; color: var(--muet); font-size: .92rem; }
 
   .capture { margin: 34px 0 0; }
   .capture img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--trait2); box-shadow: 0 24px 50px -24px #000; }

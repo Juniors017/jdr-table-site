@@ -1,0 +1,21 @@
+---
+// Séquence animée tournée dans l'appli (WebP animé). Si le visiteur a demandé moins d'animations, on montre une image fixe.
+import { url } from '../site';
+
+interface Props {
+  nom: string;
+  alt: string;
+  large?: boolean; // capture de toute la fenêtre (960 × 505) au lieu de la carte seule (720 × 405)
+}
+const { nom, alt, large = false } = Astro.props;
+const [w, h] = large ? [960, 505] : [720, 405];
+---
+
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset={url(`clips/${nom}-fixe.webp`)} />
+  <img src={url(`clips/${nom}.webp`)} alt={alt} width={w} height={h} loading="lazy" decoding="async" />
+</picture>
+
+<style>
+  img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: #0b0a09; }
+</style>

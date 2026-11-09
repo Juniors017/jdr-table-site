@@ -2,16 +2,17 @@
 import Page from '../layouts/Page.astro';
 import { SITE, url } from '../site';
 import catalogue from '../data/catalogue.json';
+import Clip from '../components/Clip.astro';
 
 const nom = (id: string) => catalogue.figs.find((f) => f.id === id)?.nom ?? id;
 
 // Pions qui se promènent sur la carte du haut de page. Positions en cases (carte de 32 × 18).
 const pions = [
-  { id: 'hero_fighter', taille: 1.5, v: 1, pts: [[12.9, 16.6], [12.9, 11.6], [18, 11.6], [18, 9.3]] },
-  { id: 'hero_wizard', taille: 1.5, v: 0.95, pts: [[13.7, 17.6], [13.7, 12.5], [16.6, 12.5], [16.6, 9.8]] },
-  { id: 'npc_barmaid', taille: 1.5, v: 0.9, pts: [[9.6, 6.6], [18.6, 6.6]] },
-  { id: 'mob_rat', taille: 1.5, v: 1.5, pts: [[19.2, 3.6], [23, 4.2], [22.6, 7], [19.4, 6.8]] },
-  { id: 'animal_cat', taille: 1.5, v: 1.1, pts: [[26, 3.2], [30.4, 6.2], [28.6, 12.6], [25.4, 10.2]] },
+  { id: 'hero_fighter', taille: 1.5, v: 1, pts: [[12.8, 16.6], [12.8, 9.1], [15.4, 9.1]] },
+  { id: 'hero_wizard', taille: 1.5, v: 0.95, pts: [[13.5, 17.6], [13.5, 9.9], [15, 9.9]] },
+  { id: 'npc_barmaid', taille: 1.5, v: 0.9, pts: [[9.4, 6.4], [15.2, 6.4]] },
+  { id: 'mob_rat', taille: 1.5, v: 1.5, pts: [[19.3, 4], [21.8, 3.6], [21.6, 7.2], [20.4, 7.2]] },
+  { id: 'animal_cat', taille: 1.5, v: 1.1, pts: [[25.7, 3.2], [25.7, 7.8], [28.6, 7.8]] },
 ];
 
 const etapes = [
@@ -21,14 +22,15 @@ const etapes = [
 ];
 
 const fonctions = [
-  { img: 'cave_entrance', t: 'Brouillard de guerre', d: "Révèle ou cache la carte au pinceau. Les pions cachés et tes notes restent sur ton écran, jamais sur la TV." },
-  { img: 'door_wood', t: 'Carte vivante', d: 'Un clic ouvre une porte, un coffre ou le pont-levis, arme un piège, éteint une torche. Eau, lave et feux sont animés.' },
-  { img: 'bookshelf', t: 'Créateur de carte', d: '428 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
-  { img: 'trap_plate', t: 'Déclencheurs et macros', d: "Une zone invisible lance une suite d'actions quand un pion y entre : piège, embuscade, mur qui se referme, scène suivante." },
-  { img: 'campsite', t: 'PNJ autonomes', d: "Trajets tracés à la souris, errance dans une zone, trajet aléatoire : les PNJ contournent murs, portes fermées et lave tout seuls." },
-  { img: 'scroll', t: 'Scènes et quêtes', d: "Chaque scène garde carte, brouillard, pions et ambiance. Range-les par quête, puis enchaîne l'histoire d'une touche." },
-  { img: 'fx_fireball', t: 'Effets et météo', d: 'Boule de feu, éclair, glace, secousse, pluie, braises : un clic sur la carte, ou une touche du clavier là où est la souris.' },
-  { img: 'crystal_ball', t: 'Sons et ambiances', d: "Sons intégrés hors ligne, ou télécommande de Syrinscape : ambiances complètes, sons d'apparition et de coup par pion." },
+  { clip: 'brouillard', t: 'Brouillard de guerre', d: "Révèle ou cache la carte au pinceau. Les pions cachés et tes notes restent sur ton écran, jamais sur la TV." },
+  { clip: 'trajets', t: 'PNJ autonomes', d: "Trajets tracés à la souris, errance dans une zone, trajet aléatoire : les PNJ contournent murs, portes fermées et lave tout seuls." },
+  { clip: 'pions', t: 'Créatures en jeu', d: "Un pion caché apparaît dans la fumée, encaisse un coup, tombe. États, cercle de couleur, héros à terre." },
+  { clip: 'carte-vivante', t: 'Carte vivante', d: 'Un clic ouvre une porte, un coffre ou le pont-levis, arme un piège, éteint une torche. Eau, lave et feux sont animés.' },
+  { clip: 'declencheur', t: 'Déclencheurs et macros', d: "Une zone invisible lance une suite d'actions quand un pion y entre : piège, embuscade, mur qui se referme, scène suivante." },
+  { clip: 'effets', t: 'Effets et météo', d: 'Boule de feu, éclair, glace, secousse, pluie, neige, nuit : un clic sur la carte, ou une touche là où est la souris.' },
+  { clip: 'createur', large: true, t: 'Créateur de carte', d: '428 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
+  { clip: 'scenes', large: true, t: 'Scènes et quêtes', d: "Chaque scène garde carte, brouillard, pions et ambiance. Range-les par quête, puis enchaîne l'histoire d'une touche." },
+  { clip: 'paroles', t: 'Paroles, annonces et sons', d: "Les PNJ parlent en bulles, une annonce s'affiche sur la TV. Sons intégrés hors ligne, ou ambiances Syrinscape." },
 ];
 
 const vedettes = [
@@ -140,14 +142,14 @@ const lancement = [
     <div class="cartouches">
       {fonctions.map((f) => (
         <article class="cartouche">
-          <img src={url(`pieces/${f.img}.webp`)} alt="" width="72" height="72" loading="lazy" />
+          <Clip nom={f.clip} alt={`Séquence tournée dans l'appli : ${f.t}`} large={f.large} />
           <h3>{f.t}</h3>
           <p>{f.d}</p>
         </article>
       ))}
     </div>
     <p class="chapo plus">
-      Et aussi : affichage 2D ou 3D de la table, marqueurs d'état sur les pions, héros « à terre » à 0 PV, gabarits de sorts,
+      Chaque séquence est tournée dans l'appli. Et aussi : dés animés, affichage 2D ou 3D de la table, gabarits de sorts,
       raccourcis clavier pour chaque action, partie en ligne, et trois quêtes d'exemple avec leur histoire pour le MJ.
     </p>
     <p class="suite"><a class="bouton" href={url('fonctions/')}>Découvrir toutes les fonctions</a></p>
@@ -361,10 +363,11 @@ const lancement = [
   .etapes p, .cartouche p { color: var(--texte2); font-size: 1rem; }
   .numero { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--or); border-radius: 50%; font: 600 1.2rem/1 var(--titre); color: var(--or2); margin-bottom: 6px; }
 
-  .cartouches { margin-top: 44px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-  .cartouche { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 22px; display: grid; gap: 8px; align-content: start; transition: border-color .2s, transform .2s; }
+  .cartouches { margin-top: 44px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .cartouche { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; overflow: hidden; display: grid; gap: 8px; align-content: start; padding-bottom: 20px; transition: border-color .2s, transform .2s; }
   .cartouche:hover { border-color: var(--trait2); transform: translateY(-2px); }
-  .cartouche img { width: 72px; height: 72px; object-fit: contain; margin: -6px 0 2px -8px; }
+  .cartouche h3, .cartouche p { padding: 0 20px; }
+  .cartouche h3 { margin-top: 10px; }
   .plus { margin-top: 30px; font-size: 1.05rem; }
 
   .bestiaire { list-style: none; padding: 0; margin: 40px 0 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
