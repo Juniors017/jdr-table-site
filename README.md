@@ -7,7 +7,7 @@ Site de présentation de l'appli Table de JDR et de son pack d'images. Site stat
 | Commande | Effet |
 |---|---|
 | `npm install` | Installe les dépendances (une seule fois) |
-| `npm run dev` | Lance le site en local sur http://localhost:4321/jdr-table-site/ |
+| `npm run dev` | Lance le site en local sur http://localhost:4321/ |
 | `npm run build` | Construit le site dans `dist/` |
 | `npm run preview` | Affiche le site construit |
 
