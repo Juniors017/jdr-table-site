@@ -37,10 +37,19 @@ const filigrane = (w, h, texte, taille, force) =>
   </pattern></defs>
   <rect width="100%" height="100%" fill="url(#f)"/>
 </svg>`);
-// « atop » : le filigrane ne se dessine que là où l'image n'est pas transparente.
+// Sur une image à fond transparent, le filigrane n'est posé que sur l'objet lui-même (pixels bien opaques) :
+// ni sur le fond, ni sur l'ombre douce qui l'entoure. La transparence d'origine est ensuite remise telle quelle.
 const avecFiligrane = async (image, texte, taille, force) => {
   const { data, info } = await image.png().toBuffer({ resolveWithObject: true });
-  return sharp(data).composite([{ input: filigrane(info.width, info.height, texte, taille, force), blend: 'atop' }]);
+  const marque = filigrane(info.width, info.height, texte, taille, force);
+  if (info.channels < 4) return sharp(data).composite([{ input: marque }]);
+  const alpha = await sharp(data).extractChannel('alpha').png().toBuffer();
+  const objet = await sharp(alpha).threshold(128).toColourspace('b-w').raw().toBuffer();
+  const masque = await sharp({ create: { width: info.width, height: info.height, channels: 3, background: '#fff' } })
+    .joinChannel(objet, { raw: { width: info.width, height: info.height, channels: 1 } }).png().toBuffer();
+  const marqueSurObjet = await sharp(marque).composite([{ input: masque, blend: 'dest-in' }]).png().toBuffer();
+  const couleurs = await sharp(data).composite([{ input: marqueSurObjet }]).removeAlpha().png().toBuffer();
+  return sharp(couleurs).joinChannel(alpha);
 };
 
 let n = 0;
@@ -61,7 +70,7 @@ for (const f of fs.readdirSync(source)) {
   } else if (genre === 'piece') {
     const { width } = await sharp(fichier).metadata();
     const w = Math.round(width * 0.7);
-    const image = await avecFiligrane(sharp(fichier).resize({ width: w }), 'TABLE-JDR', Math.max(9, Math.min(15, Math.round(w / 10))), 0.3);
+    const image = await avecFiligrane(sharp(fichier).resize({ width: w }), 'TABLE-JDR', Math.max(9, Math.min(15, Math.round(w / 10))), 0.2);
     await image.webp({ quality: 74 }).toFile(path.join(sorties.piece, `${id}.webp`));
   } else {
     await reduire(fichier, path.join(sorties[genre], `${id}.webp`), 0.7);
