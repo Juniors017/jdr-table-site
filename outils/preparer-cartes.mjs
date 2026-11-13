@@ -5,7 +5,7 @@
 // - chaque carte est dessinée comme dans l'appli (pièces du pack, sans les pièces cachées), 1920 × 1080, avec filigrane ;
 // - chaque pion reçoit un trajet calculé avec l'A* de l'appli : il contourne murs, portes fermées, lave et mobilier.
 // Écrit public/cartes/ (+ mini/ pour la grille), public/marche-demo/ (planches 4 directions des pions) et src/data/cartes.json.
-// Une carte est retenue si elle a au moins 100 pièces ; les copies exactes d'une autre carte sont ignorées.
+// Une carte est retenue si elle a au moins 100 pièces ; les copies d'une autre carte (mêmes pièces d'origine) sont ignorées.
 import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,16 +25,16 @@ const pub = path.join(racine, 'public');
 const DISTRIBUTION = {
   'forteresse-de-noirfer': ['hero_fighter', 'hero_wizard_f', 'hero_rogue', 'mob_orc', 'mob_goblin_archer', 'mob_skeleton', 'npc_alchemist'],
   'taverne-du-dragon-assoupi': ['hero_fighter', 'hero_wizard', 'npc_barmaid', 'npc_innkeeper', 'mob_rat', 'animal_cat'],
+  'egouts-de-bas-port': ['hero_rogue_f', 'npc_thief', 'mob_wererat', 'mob_rat', 'mob_slime', 'mob_cultist'],
+  'porte-des-enfers': ['hero_paladin_f', 'hero_warlock', 'mob_imp', 'mob_hellhound', 'mob_demon', 'mob_cultist'],
+  'caverne-lvl1': ['hero_dwarf_fighter', 'hero_ranger', 'npc_miner', 'mob_goblin', 'mob_goblin_archer', 'mob_kobold', 'mob_bat'],
   'crypte-des-rois-oublies': ['hero_paladin', 'hero_rogue', 'mob_skeleton', 'mob_mummy', 'mob_wraith'],
   'port-de-haute-mer': ['npc_sailor', 'npc_captain', 'hero_pirate', 'npc_merchant', 'animal_cat'],
-  'porte-des-enfers': ['hero_paladin_f', 'hero_warlock', 'mob_imp', 'mob_hellhound', 'mob_demon'],
-  'labyrinthe-de-haies': ['hero_halfling', 'hero_bard', 'mob_goblin', 'animal_rabbit'],
-  'bosquet-de-la-lune': ['hero_druid', 'mob_dryad', 'mob_pixie', 'animal_deer', 'animal_unicorn'],
-  'clairiere-du-vieux-chene': ['hero_ranger', 'hero_elf_archer', 'animal_deer', 'animal_boar', 'mob_wolf'],
+  'bosquet-de-la-lune': ['hero_druid', 'elf_lord', 'mob_dryad', 'mob_pixie', 'animal_deer', 'animal_unicorn'],
   'temple-de-la-lune-brisee': ['hero_cleric_f', 'hero_monk', 'npc_priest', 'mob_cultist', 'mob_shadow'],
-  'egouts-de-bas-port': ['hero_rogue_f', 'npc_thief', 'mob_wererat', 'mob_rat', 'mob_slime'],
-  'cimetiere': ['hero_cleric', 'mob_skeleton', 'mob_zombie', 'mob_ghost', 'mob_ghoul'],
-  'caverne-lvl1': ['hero_dwarf_fighter', 'npc_miner', 'mob_goblin', 'mob_kobold', 'mob_bat'],
+  'cimetiere': ['hero_cleric', 'npc_priest', 'mob_skeleton', 'mob_zombie', 'mob_ghost', 'mob_ghoul'],
+  'labyrinthe-de-haies': ['hero_halfling', 'hero_bard', 'mob_goblin', 'animal_rabbit'],
+  'clairiere-du-vieux-chene': ['hero_ranger', 'hero_elf_archer', 'animal_deer', 'animal_boar', 'mob_wolf'],
 };
 const DEFAUT = ['hero_fighter', 'hero_wizard_f', 'hero_rogue', 'hero_elf_archer'];
 // Ordre de passage en haut de l'accueil : les cartes de cette liste d'abord, les autres (nouvelles) ensuite.
@@ -59,7 +59,7 @@ const cartes = fs
   .map((f) => ({ titre: f.replace(/\.json$/, ''), texte: fs.readFileSync(path.join(appli, 'cartes', f), 'utf8') }))
   .filter((c) => {
     const pieces = JSON.parse(c.texte).pieces || [];
-    const cle = JSON.stringify(pieces);
+    const cle = JSON.stringify(pieces.filter((p) => !p.ajout).map(({ ajout, ...p }) => p)); // copie d'une carte, avant ou après enrichissement
     if (pieces.length < 100 || vues.has(cle)) return false;
     vues.add(cle);
     return true;
@@ -110,15 +110,30 @@ const dansAppli = async ({ texte, distribution, graine, COLS, ROWS, CASE }) => {
 
   // Sol où l'on marche : l'appli laisse le MJ poser un pion n'importe où, mais un pion de démo ne doit marcher ni dans
   // le vide (case sans sol), ni dans l'eau, une rivière ou un gouffre, sauf sur un pont, un ponton, un radeau ou un navire.
-  const SOL_INTERDIT = /^(floor_water|river_|chasm_)/, PASSERELLE = /bridge|dock|pier|raft|ship|catwalk|walkway/;
+  // Les tuiles de rive (bord, angle sortant, angle rentrant de lave, de gouffre ou de plage) sont pour moitié du sol :
+  // on regarde leurs quarts (haut-gauche, haut-droit, bas-droit, bas-gauche), tournés avec la tuile.
+  const SOL_INTERDIT = /^(floor_water|floor_lava|river_|sewer_)/, PASSERELLE = /bridge|dock|pier|raft|ship|catwalk|walkway/;
+  const RIVE = /^(lava|chasm|shore_grass|shore_sand)_(edge|outer|inner)$/;
+  const quartsDanger = (pc) => {
+    const [, , forme] = pc.a.match(RIVE), r = ((pc.rot % 4) + 4) % 4;
+    if (forme === 'inner') return [(r + 1) % 4];
+    if (forme === 'edge') return [r, (r + 1) % 4];
+    return [0, 1, 2, 3].filter((k) => k !== (r + 3) % 4);
+  };
   const marche = new Map();
+  const poser = (x, y, v) => { if (marche.get(x + ',' + y) !== 'passerelle') marche.set(x + ',' + y, v); };
   for (const pc of ordrePieces()) {
     const A = PIECES[pc.a];
     if (!A || pc.cache || (A.rang !== 0 && !PASSERELLE.test(pc.a))) continue;
+    if (A.rang === 0 && RIVE.test(pc.a)) {
+      const danger = quartsDanger(pc), x0 = Math.round(pc.cx - 1), y0 = Math.round(pc.cy - 1);
+      [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([dx, dy], k) => poser(x0 + dx, y0 + dy, !danger.includes(k)));
+      continue;
+    }
     const [fw, fh] = emprise(pc);
     for (let y = Math.round(pc.cy - fh / 2); y < Math.round(pc.cy + fh / 2); y++)
       for (let x = Math.round(pc.cx - fw / 2); x < Math.round(pc.cx + fw / 2); x++)
-        if (A.rang === 0) { if (marche.get(x + ',' + y) !== 'passerelle') marche.set(x + ',' + y, !SOL_INTERDIT.test(pc.a)); }
+        if (A.rang === 0) poser(x, y, !SOL_INTERDIT.test(pc.a));
         else marche.set(x + ',' + y, 'passerelle');
   }
   window.__marche = marche;
