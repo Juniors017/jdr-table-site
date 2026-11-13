@@ -1,99 +1,179 @@
 ---
 import Page from '../layouts/Page.astro';
-import { url } from '../site';
+import Visionneuse from '../components/Visionneuse.astro';
+import { url, simple, taille } from '../site';
 import catalogue from '../data/catalogue.json';
 
-const elements = [
-  ...catalogue.figs.map((f) => ({ ...f, genre: 'fig' })),
-  ...catalogue.pieces.map((p) => ({ ...p, genre: 'piece' })),
-];
-const devant = ['Héros', 'PNJ', 'Monstres', 'Animaux'];
-const rang = (c: string) => (devant.includes(c) ? devant.indexOf(c) : devant.length);
-elements.sort((a, b) => rang(a.cat) - rang(b.cat));
-const categories = [...new Set(elements.map((e) => e.cat))];
-const simple = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+type Element = { id: string; nom: string; genre: string; w: number; h: number; images?: number; boucle?: boolean; iw?: number; ih?: number };
+const themes = catalogue.objets as { id: string; titre: string; desc: string; sections: { titre: string; items: Element[] }[] }[];
+const total = themes.reduce((n, t) => n + t.sections.reduce((m, s) => m + s.items.length, 0), 0);
+const styleBande = ({ images = 8, boucle, iw = 1, ih = 1 }: Element) =>
+  `--n:${images};--duree:${boucle ? images * 0.11 : 1.4}s;--r:${(iw / ih).toFixed(3)};aspect-ratio:${iw}/${ih}`;
+const nombre = (t: (typeof themes)[number]) => t.sections.reduce((m, s) => m + s.items.length, 0);
+// Noms des figurines : la recherche signale celles qui correspondent, rangées dans le bestiaire.
+const figurines = catalogue.bestiaire.flatMap((t) => t.sections.flatMap((s) => s.items.map((i) => simple(i.nom))));
 ---
 
-<Page titre="Catalogue" description={`Les ${elements.length} figurines et objets du pack de la Table de JDR : héros, monstres, sols, murs, mobilier, pièges, sorts.`}>
+<Page titre="Catalogue" description={`Les ${total} objets et décors du pack de la Table de JDR : sols, murs, mobilier, nature, bâtiments, navires, trésors, pièges, sorts et objets animés.`}>
   <section class="bloc">
     <p class="sur-titre">Le catalogue</p>
-    <h1>{elements.length} figurines et objets</h1>
-    <p class="chapo">Tout ce que tu peux poser sur la table. Survole une figurine pour la voir marcher.</p>
+    <h1>{total.toLocaleString('fr-FR')} objets et décors</h1>
+    <p class="chapo">
+      Tout ce que tu peux poser sur la table, rangé par thème. Clique sur un objet pour le voir en grand.
+      Les héros, PNJ et monstres sont dans le <a href={url('bestiaire/')}>bestiaire</a>.
+    </p>
 
     <div class="filtres">
       <label class="recherche">
         <span>Chercher</span>
-        <input type="search" id="recherche" placeholder="dragon, coffre, torche…" autocomplete="off" />
+        <input type="search" id="recherche" placeholder="coffre, torche, navire, lave…" autocomplete="off" />
       </label>
-      <div class="puces" role="group" aria-label="Filtrer par catégorie">
-        <button type="button" class="puce" data-cat="" aria-pressed="true">Tout</button>
-        {categories.map((c) => <button type="button" class="puce" data-cat={c} aria-pressed="false">{c}</button>)}
+      <div class="puces" role="group" aria-label="Filtrer par thème">
+        <button type="button" class="puce" data-theme="" aria-pressed="true">Tout</button>
+        {themes.map((t) => <button type="button" class="puce" data-theme={t.id} aria-pressed="false">{t.titre} <small>{nombre(t)}</small></button>)}
       </div>
     </div>
-    <p class="discret" id="compte" aria-live="polite">{elements.length} éléments</p>
+    <p class="discret" id="compte" aria-live="polite">{total} éléments</p>
 
-    <ul class="grille" id="grille">
-      {elements.map((e) => (
-        <li data-cat={e.cat} data-nom={simple(`${e.nom} ${e.cat}`)}>
-          {e.genre === 'fig' ? (
-            <div class="fig" data-bg={url(`marche/${e.id}.webp`)} role="img" aria-label={e.nom}></div>
-          ) : (
-            <img src={url(`pieces/${e.id}.webp`)} alt={e.nom} loading="lazy" width="120" height="120" />
-          )}
-          <span>{e.nom}</span>
-        </li>
+    <div id="themes">
+      {themes.map((t) => (
+        <section class="theme" data-theme={t.id}>
+          <header class="theme-tete">
+            <h2>{t.titre}</h2>
+            {t.desc && <p>{t.desc}</p>}
+          </header>
+          {t.sections.map((s) => (
+            <div class="section">
+              {(t.sections.length > 1 || s.titre !== t.titre) && <h3>{s.titre} <small>{s.items.length}</small></h3>}
+              <ul class="grille">
+                {s.items.map((e) => {
+                  const info = `${taille(e.w, e.h)} · ${t.titre}${s.titre === t.titre ? "" : ` › ${s.titre}`}`;
+                  return (
+                    <li data-nom={simple(`${e.nom} ${s.titre} ${t.titre} ${e.id.replace(/_/g, ' ')}`)}>
+                      {e.genre === 'anim' ? (
+                        <button type="button" class="vignette" data-zoom={url(`anim/${e.id}.webp`)} data-genre="anim" data-nom={e.nom} data-info={`Objet animé · ${info}`}
+                          data-n={e.images} data-boucle={String(e.boucle)} data-iw={e.iw} data-ih={e.ih}>
+                          <span class="cadre">
+                            <span class:list={['bande', { 'aller-retour': !e.boucle }]} data-bg={url(`anim/${e.id}.webp`)}
+                              style={styleBande(e)}></span>
+                          </span>
+                          <span class="nom">{e.nom}</span>
+                        </button>
+                      ) : (
+                        <button type="button" class="vignette" data-zoom={url(`pieces/${e.id}.webp`)} data-genre="piece" data-nom={e.nom} data-info={info}>
+                          <span class="cadre"><img src={url(`pieces/mini/${e.id}.webp`)} alt="" loading="lazy" decoding="async" /></span>
+                          <span class="nom">{e.nom}</span>
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </section>
       ))}
-    </ul>
-    <p class="vide" id="vide" hidden>Rien ne correspond. Essaie un autre mot ou une autre catégorie.</p>
+    </div>
+    <div class="vide" id="vide" hidden>
+      <p>Aucun objet ne correspond. Essaie un autre mot ou un autre thème.</p>
+    </div>
+    <p class="renvoi" id="renvoi" hidden><a id="renvoi-lien" href={url('bestiaire/')}></a></p>
   </section>
+  <Visionneuse />
 </Page>
 
+<script is:inline define:vars={{ figurines }}>
+  window.__figurines = figurines;
+</script>
+
 <script>
-  const cases = [...document.querySelectorAll<HTMLElement>('#grille li')];
+  const simple = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  const figurines: string[] = (window as any).__figurines ?? [];
+  const themes = [...document.querySelectorAll<HTMLElement>('.theme')];
   const recherche = document.getElementById('recherche') as HTMLInputElement;
   const puces = [...document.querySelectorAll<HTMLButtonElement>('.puce')];
   const compte = document.getElementById('compte')!;
   const vide = document.getElementById('vide')!;
-  let cat = '';
+  const renvoi = document.getElementById('renvoi')!;
+  const renvoiLien = document.getElementById('renvoi-lien') as HTMLAnchorElement;
+  const baseBestiaire = renvoiLien.getAttribute('href')!;
+  const params = new URLSearchParams(location.search);
+  let theme = params.get('theme') ?? '';
+  recherche.value = params.get('q') ?? '';
 
   function filtrer() {
-    const mot = recherche.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const mot = simple(recherche.value);
     let n = 0;
-    for (const li of cases) {
-      const visible = (!cat || li.dataset.cat === cat) && (!mot || li.dataset.nom!.includes(mot));
-      li.hidden = !visible;
-      if (visible) n++;
+    for (const t of themes) {
+      let nt = 0;
+      const actif = !theme || t.dataset.theme === theme;
+      for (const s of t.querySelectorAll<HTMLElement>('.section')) {
+        let ns = 0;
+        for (const li of s.querySelectorAll<HTMLElement>('li')) {
+          const visible = actif && (!mot || li.dataset.nom!.includes(mot));
+          li.hidden = !visible;
+          if (visible) ns++;
+        }
+        s.hidden = ns === 0;
+        nt += ns;
+      }
+      t.hidden = nt === 0;
+      n += nt;
     }
-    compte.textContent = `${n} élément${n > 1 ? 's' : ''}`;
+    compte.textContent = `${n.toLocaleString('fr-FR')} élément${n > 1 ? 's' : ''}`;
     vide.hidden = n > 0;
+    const figs = mot.length > 1 ? figurines.filter((f) => f.includes(mot)).length : 0;
+    renvoi.hidden = figs === 0;
+    renvoiLien.textContent = `${figs} figurine${figs > 1 ? 's' : ''} du bestiaire ${figs > 1 ? 'correspondent' : 'correspond'} aussi à « ${recherche.value.trim()} » →`;
+    renvoiLien.href = `${baseBestiaire}?q=${encodeURIComponent(recherche.value.trim())}`;
+    for (const p of puces) p.setAttribute('aria-pressed', String(p.dataset.theme === theme));
+    const u = new URL(location.href);
+    theme ? u.searchParams.set('theme', theme) : u.searchParams.delete('theme');
+    recherche.value.trim() ? u.searchParams.set('q', recherche.value.trim()) : u.searchParams.delete('q');
+    history.replaceState(null, '', u);
   }
   recherche.addEventListener('input', filtrer);
   for (const p of puces)
     p.addEventListener('click', () => {
-      cat = p.dataset.cat!;
-      for (const q of puces) q.setAttribute('aria-pressed', String(q === p));
+      theme = p.dataset.theme!;
       filtrer();
     });
+  if (theme || recherche.value) filtrer();
 </script>
 
 <style>
   h1 { font-size: clamp(1.9rem, 4vw, 3rem); }
+  .chapo a { color: var(--or2); }
   .filtres { margin-top: 34px; display: grid; gap: 16px; }
   .recherche { display: grid; gap: 6px; max-width: 420px; }
   .recherche span { font: 700 .8rem/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--muet); }
   .recherche input { padding: 12px 14px; border-radius: 8px; border: 1px solid var(--trait2); background: var(--fond2); color: var(--texte); font: inherit; }
   .puces { display: flex; flex-wrap: wrap; gap: 8px; }
   .puce { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--trait2); background: transparent; color: var(--texte2); font: 600 .9rem/1.2 var(--ui); cursor: pointer; }
+  .puce small { font-weight: 400; opacity: .7; margin-left: 2px; }
   .puce:hover { background: var(--survol); color: #fff; }
   .puce[aria-pressed="true"] { background: var(--or); border-color: var(--or); color: #1a1408; }
   #compte { margin-top: 18px; }
 
-  .grille { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
-  .grille li { background: #6b6257; border: 1px solid var(--trait2); border-radius: 10px; padding: 8px 6px 10px; display: grid; gap: 6px; justify-items: center; align-content: space-between; text-align: center; }
-  .grille li[hidden] { display: none; }
-  .grille img { width: 100%; aspect-ratio: 1; height: auto; object-fit: contain; }
-  .grille .fig { width: 100%; --ligne: 0; animation-play-state: paused; }
-  .grille li:hover .fig { --ligne: 1; animation-play-state: running; }
-  .grille span { font-size: .82rem; font-weight: 600; line-height: 1.2; color: #fff; overflow-wrap: anywhere; }
+  .theme { margin-top: 48px; }
+  .theme[hidden], .section[hidden], .grille li[hidden] { display: none; }
+  .theme-tete { border-bottom: 1px solid var(--trait); padding-bottom: 12px; }
+  .theme-tete h2 { font-size: clamp(1.35rem, 2.6vw, 1.8rem); }
+  .theme-tete p { color: var(--texte2); margin-top: 6px; }
+  .section { margin-top: 22px; }
+  .section h3 { font: 700 .82rem/1.2 var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--or2); }
+  .section h3 small { color: var(--muet); font-weight: 600; letter-spacing: 0; margin-left: 4px; }
+
+  .grille { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+  .vignette { width: 100%; height: 100%; display: grid; gap: 6px; align-content: space-between; justify-items: center; padding: 8px 6px 10px; text-align: center;
+    background: #6b6257; border: 1px solid var(--trait2); border-radius: 10px; color: #fff; font: inherit; cursor: zoom-in; transition: border-color .15s, transform .15s; }
+  .vignette:hover { border-color: var(--or); transform: translateY(-2px); }
+  .cadre { position: relative; width: 100%; aspect-ratio: 1; display: grid; place-items: center; }
+  .cadre img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  /* Bande animée : aussi large que possible sans dépasser le carré (--r = largeur / hauteur d'une image). */
+  .cadre .bande { display: block; width: calc(100% * min(1, var(--r))); animation-play-state: paused; }
+  .vignette:hover .bande, .vignette:focus-visible .bande { animation-play-state: running; }
+  .nom { font-size: .82rem; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
   .vide { margin-top: 30px; color: var(--texte2); }
+  .renvoi { margin-top: 18px; font-weight: 600; }
 </style>

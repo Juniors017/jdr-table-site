@@ -1,0 +1,112 @@
+---
+// Visionneuse : un clic sur un élément [data-zoom] l'ouvre en pleine résolution.
+// Attributs lus sur l'élément : data-zoom (adresse de l'image HQ), data-genre (piece | fig | anim), data-nom, data-info,
+// et pour les bandes animées data-n (nombre d'images), data-boucle, data-iw / data-ih (taille d'une image en px).
+---
+
+<dialog class="visionneuse" id="visionneuse" aria-labelledby="vis-nom">
+  <div class="vis-scene" id="vis-scene"></div>
+  <div class="vis-bas">
+    <div>
+      <p class="vis-nom" id="vis-nom"></p>
+      <p class="vis-info" id="vis-info"></p>
+    </div>
+    <div class="vis-boutons">
+      <button type="button" class="vis-bouton" data-pose hidden aria-pressed="false">À l'arrêt</button>
+      <button type="button" class="vis-bouton" data-aller="-1" aria-label="Précédent">←</button>
+      <button type="button" class="vis-bouton" data-aller="1" aria-label="Suivant">→</button>
+      <button type="button" class="vis-bouton" data-fermer aria-label="Fermer">✕</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const vis = document.getElementById('visionneuse') as HTMLDialogElement;
+  const scene = document.getElementById('vis-scene')!;
+  const nom = document.getElementById('vis-nom')!;
+  const info = document.getElementById('vis-info')!;
+  const pose = vis.querySelector<HTMLButtonElement>('[data-pose]')!;
+  let courant: HTMLElement | null = null;
+
+  function montrer(el: HTMLElement) {
+    courant = el;
+    const d = el.dataset;
+    nom.textContent = d.nom ?? '';
+    info.textContent = d.info ?? '';
+    scene.replaceChildren();
+    pose.hidden = d.genre !== 'fig';
+    pose.setAttribute('aria-pressed', 'false');
+    if (d.genre === 'piece') {
+      const img = new Image();
+      img.src = d.zoom!;
+      img.alt = d.nom ?? '';
+      img.decoding = 'async';
+      scene.append(img);
+    } else {
+      const bloc = document.createElement('div');
+      bloc.setAttribute('role', 'img');
+      bloc.setAttribute('aria-label', d.nom ?? '');
+      bloc.style.backgroundImage = `url("${d.zoom}")`;
+      if (d.genre === 'fig') {
+        bloc.className = 'fig';
+        bloc.style.setProperty('--ligne', '1');
+      } else {
+        const n = Number(d.n);
+        bloc.className = d.boucle === 'true' ? 'bande' : 'bande aller-retour';
+        const iw = Number(d.iw), ih = Number(d.ih);
+        bloc.style.cssText += `--n:${n};--duree:${d.boucle === 'true' ? n * 0.11 : 1.4}s;aspect-ratio:${iw}/${ih};` +
+          `width:min(${Math.round(Math.min(iw * 1.8, 640))}px, 76vw, calc((100dvh - 200px) * ${(iw / ih).toFixed(3)}))`;
+      }
+      scene.append(bloc);
+    }
+    if (!vis.open) vis.showModal();
+  }
+
+  function aller(sens: number) {
+    const tous = [...document.querySelectorAll<HTMLElement>('[data-zoom]')].filter((e) => e.offsetParent !== null);
+    const i = courant ? tous.indexOf(courant) : -1;
+    const suivant = tous[(i + sens + tous.length) % tous.length];
+    if (suivant) montrer(suivant);
+  }
+
+  document.addEventListener('click', (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
+    if (el && !vis.contains(el)) montrer(el);
+  });
+  vis.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+    if (b?.dataset.aller) aller(Number(b.dataset.aller));
+    else if (b?.hasAttribute('data-fermer') || e.target === vis) vis.close();
+    else if (b === pose) {
+      const arret = pose.getAttribute('aria-pressed') !== 'true';
+      pose.setAttribute('aria-pressed', String(arret));
+      scene.querySelector<HTMLElement>('.fig')?.style.setProperty('--ligne', arret ? '0' : '1');
+    }
+  });
+  vis.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') aller(1);
+    else if (e.key === 'ArrowLeft') aller(-1);
+  });
+  vis.addEventListener('close', () => {
+    scene.replaceChildren();
+    courant?.focus();
+  });
+</script>
+
+<style>
+  .visionneuse { width: min(920px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--trait2); border-radius: 14px;
+    background: var(--carte); color: var(--texte); overflow: hidden; }
+  .visionneuse::backdrop { background: rgb(8 7 6 / .82); backdrop-filter: blur(3px); }
+  .visionneuse[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+  .vis-scene { display: grid; place-items: center; padding: clamp(14px, 3vw, 28px); min-height: 280px; overflow: auto;
+    background: radial-gradient(circle at 50% 45%, #7a7064, #5a5248 75%); }
+  .vis-scene :global(img) { max-width: 100%; max-height: calc(100dvh - 190px); width: auto; height: auto; object-fit: contain; }
+  .vis-scene :global(.fig) { width: min(420px, 70vw, calc(100dvh - 200px)); }
+  .vis-bas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--trait); }
+  .vis-nom { font: 600 1.15rem/1.2 var(--titre); color: #fff; }
+  .vis-info { color: var(--muet); font-size: .92rem; margin-top: 2px; }
+  .vis-boutons { display: flex; gap: 8px; }
+  .vis-bouton { min-width: 42px; height: 42px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--trait2); background: transparent; color: var(--texte); font: 600 1rem/1 var(--ui); cursor: pointer; }
+  .vis-bouton:hover { background: var(--survol); color: #fff; }
+  .vis-bouton[aria-pressed="true"] { background: var(--or); border-color: var(--or); color: #1a1408; }
+</style>

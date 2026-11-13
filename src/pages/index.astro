@@ -4,7 +4,11 @@ import { url } from '../site';
 import catalogue from '../data/catalogue.json';
 import Clip from '../components/Clip.astro';
 
-const nom = (id: string) => catalogue.figs.find((f) => f.id === id)?.nom ?? id;
+const tous = [...catalogue.bestiaire, ...catalogue.objets].flatMap((t) => t.sections.flatMap((s) => s.items)) as
+  { id: string; nom: string; genre: string; images?: number; boucle?: boolean; iw?: number; ih?: number }[];
+const nom = (id: string) => tous.find((f) => f.id === id)?.nom ?? id;
+const { chiffres: total } = catalogue;
+const fr = (n: number) => n.toLocaleString('fr-FR');
 
 // Pions qui se promènent sur la carte du haut de page. Positions en cases (carte de 32 × 18).
 const pions = [
@@ -28,15 +32,15 @@ const fonctions = [
   { clip: 'carte-vivante', t: 'Carte vivante', d: 'Un clic ouvre une porte, un coffre ou le pont-levis, arme un piège, éteint une torche. Eau, lave et feux sont animés.' },
   { clip: 'declencheur', t: 'Déclencheurs et macros', d: "Une zone invisible lance une suite d'actions quand un pion y entre : piège, embuscade, mur qui se referme, scène suivante." },
   { clip: 'effets', t: 'Effets et météo', d: 'Boule de feu, éclair, glace, secousse, pluie, neige, nuit : un clic sur la carte, ou une touche là où est la souris.' },
-  { clip: 'createur', t: 'Créateur de carte', d: '428 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
+  { clip: 'createur', t: 'Créateur de carte', d: 'Plus de 1 000 objets à peindre : sols raccordables, murs qui suivent la grille, mobilier, nature, navires. Pivoter, grouper, verrouiller, annuler.' },
   { clip: 'scenes', t: 'Scènes et quêtes', d: "Chaque scène garde carte, brouillard, pions et ambiance. Range-les par quête, puis enchaîne l'histoire d'une touche." },
   { clip: 'paroles', t: 'Paroles, annonces et sons', d: "Les PNJ parlent en bulles, une annonce s'affiche sur la TV. Sons intégrés hors ligne, ou ambiances Syrinscape." },
 ];
 
 const vedettes = [
-  'hero_fighter', 'hero_wizard', 'hero_rogue', 'hero_cleric', 'hero_elf_archer', 'hero_dwarf_fighter', 'hero_paladin', 'hero_tiefling',
-  'npc_innkeeper', 'npc_blacksmith', 'npc_king', 'npc_guard', 'mob_goblin', 'mob_orc', 'mob_skeleton', 'mob_spider',
-  'mob_owlbear', 'mob_troll', 'mob_minotaur', 'mob_dragon_gold', 'boss_lich', 'animal_horse', 'animal_bear', 'animal_cat',
+  'hero_fighter', 'hero_wizard_f', 'hero_rogue', 'hero_elf_archer', 'hero_dwarf_fighter', 'hero_paladin', 'hero_samurai', 'npc_innkeeper',
+  'npc_queen', 'npc_blacksmith', 'soldier_red_officer', 'elf_lord', 'animal_horse', 'animal_lion', 'mob_goblin', 'mob_orc',
+  'mob_owlbear', 'mob_minotaur', 'mob_death_knight', 'mob_genie', 'mob_treant', 'mob_phoenix', 'mob_dracolich', 'boss_lich',
 ];
 
 const cartes = [
@@ -51,15 +55,16 @@ const des = [
   { id: 'd12', faces: 12 }, { id: 'd20', faces: 20 }, { id: 'd100', faces: 10 },
 ];
 
-const animes = ['door_wood_anim', 'chest_royal_anim', 'mimic_chest_anim', 'trapdoor_anim', 'fire_brazier_anim', 'fire_camp_anim', 'lava_anim', 'water_anim']
-  .map((id) => catalogue.anims.find((a) => a.id === id)!)
-  .filter(Boolean);
+const animes = ['door_wood_anim', 'chest_royal_anim', 'fire_brazier_anim', 'waterfall_anim', 'magic_circle_anim', 'fairy_pond_anim', 'lava_anim', 'water_anim']
+  .map((id) => tous.find((a) => a.id === id)!)
+  .filter(Boolean)
+  .map((a) => ({ ...a, images: a.images ?? 8, iw: a.iw ?? 1, ih: a.ih ?? 1 }));
 
 const chiffres = [
-  { n: '608', t: 'images vues de dessus' },
-  { n: '156', t: 'figurines animées' },
-  { n: '21', t: 'objets animés' },
-  { n: '7', t: 'dés, du d4 au d100' },
+  { n: fr(total.assets), t: 'images vues de dessus' },
+  { n: fr(total.figurines), t: 'figurines animées' },
+  { n: fr(total.animes), t: 'objets animés' },
+  { n: fr(total.des), t: 'dés, du d4 au d100' },
   { n: '4', t: 'cartes prêtes à jouer' },
 ];
 
@@ -191,17 +196,20 @@ const lancement = [
 
   <section class="bloc" id="bestiaire">
     <p class="sur-titre">Le bestiaire</p>
-    <h2>156 figurines qui marchent vraiment</h2>
-    <p class="chapo">Héros, PNJ de ville, monstres, animaux et attelages, rendus en 3D vus de dessus, dans les quatre directions. En voici quelques-uns.</p>
+    <h2>{total.figurines} figurines qui marchent vraiment</h2>
+    <p class="chapo">Héros, PNJ, soldats, animaux, monstres et attelages, rendus en 3D vus de dessus, dans les quatre directions. En voici quelques-uns.</p>
     <ul class="bestiaire">
       {vedettes.map((id) => (
         <li>
-          <div class="fig" data-bg={url(`marche/${id}.webp`)} role="img" aria-label={nom(id)}></div>
+          <div class="fig" data-bg={url(`marche/mini/${id}.webp`)} role="img" aria-label={nom(id)}></div>
           <span>{nom(id)}</span>
         </li>
       ))}
     </ul>
-    <p class="suite"><a class="bouton creux" href={url('catalogue/')}>Parcourir tout le catalogue</a></p>
+    <p class="suite">
+      <a class="bouton" href={url('bestiaire/')}>Voir tout le bestiaire</a>
+      <a class="bouton creux" href={url('catalogue/')}>Parcourir le catalogue des objets</a>
+    </p>
   </section>
 
   <section class="bloc" id="cartes">

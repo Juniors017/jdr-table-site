@@ -1,0 +1,153 @@
+---
+import Page from '../layouts/Page.astro';
+import Visionneuse from '../components/Visionneuse.astro';
+import { url, simple, taille } from '../site';
+import catalogue from '../data/catalogue.json';
+
+type Fig = { id: string; nom: string; genre: string; w: number; h: number; v?: number };
+const themes = catalogue.bestiaire as { id: string; titre: string; desc: string; sections: { titre: string; items: Fig[] }[] }[];
+const marcheurs = catalogue.chiffres.figurines;
+const vitesse = (v?: number) => (v === undefined ? '' : v === 0 ? ' · immobile' : ` · ${String(v).replace('.', ',')} case/s`);
+---
+
+<Page titre="Bestiaire" description={`Les ${marcheurs} figurines animées de la Table de JDR : héros, PNJ, soldats, animaux et monstres, vus de dessus, avec leur cycle de marche.`}>
+  <section class="bloc">
+    <p class="sur-titre">Le bestiaire</p>
+    <h1>{marcheurs} figurines qui marchent vraiment</h1>
+    <p class="chapo">
+      Héros, PNJ, soldats, animaux et monstres, rendus en 3D vus de dessus. Chacun a son cycle de marche dans les quatre
+      directions, et les monstres errent seuls sur la carte. Clique sur une figurine pour la voir en grand.
+    </p>
+
+    <div class="filtres">
+      <label class="recherche">
+        <span>Chercher</span>
+        <input type="search" id="recherche" placeholder="dragon, gobelin, chevalier…" autocomplete="off" />
+      </label>
+      <div class="puces" role="group" aria-label="Filtrer par famille">
+        <button type="button" class="puce" data-theme="" aria-pressed="true">Tout</button>
+        {themes.map((t) => <button type="button" class="puce" data-theme={t.id} aria-pressed="false">{t.titre}</button>)}
+      </div>
+    </div>
+    <p class="discret" id="compte" aria-live="polite"></p>
+
+    {themes.map((t) => (
+      <section class="theme" data-theme={t.id}>
+        <header class="theme-tete">
+          <h2>{t.titre}</h2>
+          <p>{t.desc}</p>
+        </header>
+        {t.sections.map((s) => (
+          <div class="section">
+            {s.titre !== t.titre && <h3>{s.titre} <small>{s.items.length}</small></h3>}
+            <ul class="grille">
+              {s.items.map((e) => (
+                <li data-nom={simple(`${e.nom} ${s.titre} ${t.titre}`)}>
+                  {e.genre === 'fig' ? (
+                    <button type="button" class="carte" data-zoom={url(`marche/${e.id}.webp`)} data-genre="fig" data-nom={e.nom}
+                      data-info={`${s.titre} · ${taille(e.w, e.h)}${vitesse(e.v)}`}>
+                      <span class="fig" data-bg={url(`marche/mini/${e.id}.webp`)}></span>
+                      <span class="nom">{e.nom}</span>
+                      {(e.w > 1 || e.h > 1) && <span class="taille">{e.w} × {e.h}</span>}
+                    </button>
+                  ) : (
+                    <button type="button" class="carte" data-zoom={url(`pieces/${e.id}.webp`)} data-genre="piece" data-nom={e.nom} data-info={`${s.titre} · image fixe`}>
+                      <img src={url(`pieces/mini/${e.id}.webp`)} alt="" loading="lazy" decoding="async" />
+                      <span class="nom">{e.nom}</span>
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    ))}
+    <p class="vide" id="vide" hidden>
+      Aucune figurine ne correspond. Essaie un autre mot, ou cherche dans le <a id="vers-catalogue" href={url('catalogue/')}>catalogue des objets</a>.
+    </p>
+  </section>
+  <Visionneuse />
+</Page>
+
+<script>
+  const simple = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  const themes = [...document.querySelectorAll<HTMLElement>('.theme')];
+  const recherche = document.getElementById('recherche') as HTMLInputElement;
+  const puces = [...document.querySelectorAll<HTMLButtonElement>('.puce')];
+  const compte = document.getElementById('compte')!;
+  const vide = document.getElementById('vide')!;
+  const versCatalogue = document.getElementById('vers-catalogue') as HTMLAnchorElement;
+  const baseCatalogue = versCatalogue.getAttribute('href')!;
+  const params = new URLSearchParams(location.search);
+  let theme = params.get('theme') ?? '';
+  recherche.value = params.get('q') ?? '';
+
+  function filtrer() {
+    const mot = simple(recherche.value);
+    let n = 0;
+    for (const t of themes) {
+      let nt = 0;
+      const actif = !theme || t.dataset.theme === theme;
+      for (const s of t.querySelectorAll<HTMLElement>('.section')) {
+        let ns = 0;
+        for (const li of s.querySelectorAll<HTMLElement>('li')) {
+          const visible = actif && (!mot || li.dataset.nom!.includes(mot));
+          li.hidden = !visible;
+          if (visible) ns++;
+        }
+        s.hidden = ns === 0;
+        nt += ns;
+      }
+      t.hidden = nt === 0;
+      n += nt;
+    }
+    compte.textContent = `${n} figurine${n > 1 ? 's' : ''}`;
+    vide.hidden = n > 0;
+    versCatalogue.href = recherche.value.trim() ? `${baseCatalogue}?q=${encodeURIComponent(recherche.value.trim())}` : baseCatalogue;
+    for (const p of puces) p.setAttribute('aria-pressed', String(p.dataset.theme === theme));
+    const u = new URL(location.href);
+    theme ? u.searchParams.set('theme', theme) : u.searchParams.delete('theme');
+    recherche.value.trim() ? u.searchParams.set('q', recherche.value.trim()) : u.searchParams.delete('q');
+    history.replaceState(null, '', u);
+  }
+  recherche.addEventListener('input', filtrer);
+  for (const p of puces)
+    p.addEventListener('click', () => {
+      theme = p.dataset.theme!;
+      filtrer();
+    });
+  filtrer();
+</script>
+
+<style>
+  h1 { font-size: clamp(1.9rem, 4vw, 3rem); }
+  .filtres { margin-top: 34px; display: grid; gap: 16px; }
+  .recherche { display: grid; gap: 6px; max-width: 420px; }
+  .recherche span { font: 700 .8rem/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--muet); }
+  .recherche input { padding: 12px 14px; border-radius: 8px; border: 1px solid var(--trait2); background: var(--fond2); color: var(--texte); font: inherit; }
+  .puces { display: flex; flex-wrap: wrap; gap: 8px; }
+  .puce { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--trait2); background: transparent; color: var(--texte2); font: 600 .9rem/1.2 var(--ui); cursor: pointer; }
+  .puce:hover { background: var(--survol); color: #fff; }
+  .puce[aria-pressed="true"] { background: var(--or); border-color: var(--or); color: #1a1408; }
+  #compte { margin-top: 18px; }
+
+  .theme { margin-top: 48px; }
+  .theme[hidden], .section[hidden], .grille li[hidden] { display: none; }
+  .theme-tete { border-bottom: 1px solid var(--trait); padding-bottom: 12px; }
+  .theme-tete h2 { font-size: clamp(1.35rem, 2.6vw, 1.8rem); }
+  .theme-tete p { color: var(--texte2); margin-top: 6px; }
+  .section { margin-top: 22px; }
+  .section h3 { font: 700 .82rem/1.2 var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--or2); }
+  .section h3 small { color: var(--muet); font-weight: 600; letter-spacing: 0; margin-left: 4px; }
+
+  .grille { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .carte { position: relative; width: 100%; height: 100%; display: grid; gap: 4px; align-content: space-between; justify-items: center; padding: 6px 6px 12px; text-align: center;
+    background: radial-gradient(circle at 50% 42%, #3b3327, var(--carte) 70%); border: 1px solid var(--trait); border-radius: 12px; color: var(--texte2);
+    font: inherit; cursor: zoom-in; transition: border-color .15s, transform .15s; }
+  .carte:hover { border-color: var(--or); transform: translateY(-2px); }
+  .carte .fig, .carte img { width: 100%; aspect-ratio: 1; object-fit: contain; }
+  .nom { font-size: .9rem; font-weight: 600; line-height: 1.25; }
+  .taille { position: absolute; top: 8px; right: 8px; padding: 2px 7px; border-radius: 999px; background: rgb(0 0 0 / .45); color: var(--or2); font: 700 .72rem/1.4 var(--ui); }
+  .vide { margin-top: 30px; color: var(--texte2); }
+</style>

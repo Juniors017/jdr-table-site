@@ -15,12 +15,18 @@ Site de présentation de l'appli Table de JDR et de son pack d'images. Site stat
 
 - `src/site.ts` : nom et description du site.
 - `src/pages/index.astro` : page d'accueil (textes des sections en haut du fichier).
-- `src/pages/catalogue.astro` : catalogue avec recherche et filtres.
+- `src/pages/catalogue.astro` : catalogue des objets, rangé par thème, avec recherche et filtres.
+- `src/pages/bestiaire.astro` : toutes les figurines qui marchent (héros, PNJ, animaux, monstres).
+- `src/components/Visionneuse.astro` : la fenêtre qui montre un objet ou une figurine en pleine résolution.
 - `src/styles/global.css` : couleurs et polices (les mêmes que l'écran du MJ).
-- `src/data/catalogue.json` : liste des figurines et objets, tirée de `js/lib/design.js` de l'appli.
+- `src/data/catalogue.json` : liste des figurines et objets, **fabriquée** par `outils/preparer-images.mjs` (ne pas la modifier à la main).
 - `src/pages/fonctions.astro` : visite complète des fonctions, avec les captures de `public/captures/`.
 - `public/clips/` : séquences animées tournées dans l'appli (WebP animé + image fixe), affichées par `src/components/Clip.astro`. Pour les retourner : `outils/clips/` (mode d'emploi en tête de `enregistrer.cjs` ; `joueurs.cjs` tourne la Vue Table et la partie en ligne).
-- `public/` : images du pack en version « vitrine » (réduites, figurines dans une seule direction). Pour les refaire après une mise à jour du pack : `node outils/preparer-images.mjs <chemin vers table-jdr/assets/design>`.
+- `public/` : images du pack en pleine résolution avec un filigrane léger (figurines dans une seule direction), plus des vignettes
+  réduites pour les grilles (`pieces/mini/`, `marche/mini/`). Après une mise à jour du dépôt des assets
+  ([assets-table-jdr](https://github.com/Juniors017/assets-table-jdr)), tout refaire (images et `catalogue.json`) :
+  `node outils/preparer-images.mjs <chemin vers assets-table-jdr>`. Les thèmes et sections du catalogue viennent des planches
+  `generateur/planches/R*.json` de ce dépôt.
 
 ## Mise en ligne
 

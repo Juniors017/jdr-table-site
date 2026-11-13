@@ -2,6 +2,7 @@
 import Page from '../layouts/Page.astro';
 import { url } from '../site';
 import Clip from '../components/Clip.astro';
+import catalogue from '../data/catalogue.json';
 
 // Visite complète de l'appli. Chaque chapitre : des séquences animées et une capture, tournées dans l'appli, puis ses options.
 type Option = [string, string];
@@ -59,7 +60,7 @@ const chapitres: Chapitre[] = [
     id: 'pions',
     mode: 'Mode Jouer',
     titre: 'Créatures et PNJ',
-    intro: '156 figurines animées : héros, PNJ de ville, monstres, animaux, attelages. Chacune se place, se cache, se déplace seule et réagit aux coups.',
+    intro: `${catalogue.chiffres.figurines} figurines animées : héros, PNJ, soldats, monstres, animaux, attelages. Chacune se place, se cache, se déplace seule et réagit aux coups.`,
     clips: [
       ['pions', 'Deux squelettes cachés apparaissent dans la fumée, prennent des coups, puis tombent.'],
       ['trajets', "Sur l'écran du MJ : le trajet en pointillés de la serveuse et les zones d'errance du chat, de l'enfant et de l'aubergiste."],
@@ -128,7 +129,7 @@ const chapitres: Chapitre[] = [
     id: 'carte',
     mode: 'Mode Préparer',
     titre: 'Créateur de carte',
-    intro: '428 objets du pack à peindre sur la grille : sols, raccords de terrain, murs, mobilier, décor, nature, bâtiments, navires, trésors, armes, pièges, sorts.',
+    intro: 'Plus de 1 000 objets du pack à peindre sur la grille : sols, raccords de terrain, murs, toits, mobilier, décor, nature, bâtiments, navires, trésors, armes, pièges, sorts.',
     clips: [['createur', "Une auberge construite de zéro : herbe, plancher, murs, porte, mobilier."]],
     capture: 'prep-materiaux',
     legende: 'Le mode Préparer : la liste des scènes à gauche, les matériaux à droite, les raccourcis en bas.',
