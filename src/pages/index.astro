@@ -82,8 +82,8 @@ const lancement = [
       </div>
     </div>
 
-    <div class="tv-socle" aria-hidden="true">
-      <div class="tv">
+    <div class="tv-socle">
+      <div class="tv" aria-hidden="true">
         <div class="plateau" id="plateau" style={styleCarte(premiere.id)} data-cartes={JSON.stringify(cartes)} data-base={url('')}>
           <div class="grille"></div>
           <div id="pions">
@@ -97,10 +97,15 @@ const lancement = [
           <div class="voile"></div>
         </div>
       </div>
+      <button type="button" class="fleche precedente" data-sens="-1" aria-label="Carte précédente">‹</button>
+      <button type="button" class="fleche suivante" data-sens="1" aria-label="Carte suivante">›</button>
+    </div>
+    <div class="points" role="group" aria-label="Choisir une carte">
+      {cartes.map((c, i) => <button type="button" data-carte={i} aria-label={c.titre} aria-pressed={String(i === 0)}></button>)}
     </div>
     <p class="legende discret">
       <strong id="carte-titre">{premiere.titre}</strong>, une des {cartes.length} cartes faites dans l'appli.
-      Les pions y font leur ronde en contournant murs, portes et mobilier.
+      Les pions y font leur ronde en contournant murs, portes et mobilier. Fais glisser la TV ou clique sur les flèches pour changer de carte.
     </p>
   </section>
 
@@ -304,6 +309,7 @@ const lancement = [
   const FONDU = 900; // ms : durée du brouillard (même valeur que la transition CSS de .voile)
 
   let numero = 0;
+  let surCarte = 0; // secondes passées sur la carte affichée
   let pions: { el: HTMLElement; pts: [number, number][]; v: number; i: number; sens: number; x: number; y: number; pause: number; ligne: number }[] = [];
   const placer = (p: (typeof pions)[number]) => {
     p.el.style.left = `${(p.x / 32) * 100}%`;
@@ -337,36 +343,72 @@ const lancement = [
     }
     return prete.get(n)!;
   };
+  // Changement de carte : automatique, ou à la souris (flèches, points, glisser). Une demande faite pendant un
+  // changement en cours est gardée et jouée juste après.
+  const points = [...document.querySelectorAll<HTMLButtonElement>('.points button')];
   let change = false;
-  async function carteSuivante() {
+  let demande: number | null = null;
+  let cible = 0; // dernière carte demandée (les flèches partent d'elle, même pendant un changement)
+  async function allerA(n: number, fondu = FONDU) {
+    n = (n + cartes.length) % cartes.length;
+    cible = n;
+    surCarte = 0;
+    if (change) return void (demande = n);
+    if (n === numero) return;
     change = true;
-    const n = (numero + 1) % cartes.length;
     await charger(n);
+    voile.style.transitionDuration = `${fondu}ms`;
     voile.classList.add('couvre');
-    await new Promise((ok) => setTimeout(ok, FONDU));
+    await new Promise((ok) => setTimeout(ok, fondu));
     numero = n;
     plateau.style.backgroundImage = `url(${base}cartes/${cartes[n].id}.webp)`;
     titre.textContent = cartes[n].titre;
+    points.forEach((b, i) => b.setAttribute('aria-pressed', String(i === n)));
     poserPions(cartes[n]);
     voile.classList.remove('couvre');
     charger((n + 1) % cartes.length);
+    charger((n - 1 + cartes.length) % cartes.length);
     change = false;
+    if (demande !== null) {
+      const d = demande;
+      demande = null;
+      allerA(d, 350);
+    }
   }
+  const rapide = calme ? 0 : 450; // à la souris, le brouillard passe plus vite
+  document.querySelectorAll<HTMLButtonElement>('.fleche').forEach((b) =>
+    b.addEventListener('click', () => allerA(cible + Number(b.dataset.sens), rapide)),
+  );
+  points.forEach((b, i) => b.addEventListener('click', () => allerA(i, rapide)));
+  // Glisser la TV vers la gauche ou la droite (souris ou doigt).
+  let depart: { x: number; y: number } | null = null;
+  plateau.addEventListener('pointerdown', (e) => {
+    depart = { x: e.clientX, y: e.clientY };
+    plateau.setPointerCapture(e.pointerId);
+  });
+  plateau.addEventListener('pointerup', (e) => {
+    if (!depart) return;
+    const dx = e.clientX - depart.x;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(e.clientY - depart.y)) allerA(cible + (dx < 0 ? 1 : -1), rapide);
+    depart = null;
+  });
+  plateau.addEventListener('pointercancel', () => (depart = null));
+  // Pas de défilement automatique tant que la souris est sur la TV.
+  let survol = false;
+  const socle = plateau.closest<HTMLElement>('.tv-socle')!;
+  socle.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && (survol = true));
+  socle.addEventListener('pointerleave', () => (survol = false));
 
   let visible = true;
   new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(plateau);
-  let surCarte = 0;
   let avant = performance.now();
   function pas(maintenant: number) {
     const dt = Math.min(0.05, (maintenant - avant) / 1000);
     avant = maintenant;
-    if (visible && !change && cartes.length > 1) {
+    if (visible && !survol && !change && cartes.length > 1) {
       surCarte += dt;
       if (surCarte > DUREE - 4) charger((numero + 1) % cartes.length);
-      if (surCarte > DUREE) {
-        surCarte = 0;
-        carteSuivante();
-      }
+      if (surCarte > DUREE) allerA(numero + 1);
     }
     for (const p of pions) {
       if (p.pause > 0) {
@@ -436,7 +478,22 @@ const lancement = [
   #demarrer .actions { justify-content: flex-start; }
 
   /* La TV posée à plat, vue en légère plongée. */
-  .tv-socle { perspective: 1600px; margin: clamp(4px, 1vw, 12px) auto 0; max-width: 1040px; }
+  .tv-socle { position: relative; perspective: 1600px; margin: clamp(4px, 1vw, 12px) auto 0; max-width: 1040px; }
+  .plateau { cursor: grab; touch-action: pan-y; user-select: none; }
+  .plateau:active { cursor: grabbing; }
+  /* Flèches de part et d'autre de la TV : discrètes, plus visibles au survol. */
+  .fleche { position: absolute; top: 50%; translate: 0 -50%; z-index: 2; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--trait2);
+    background: rgb(20 18 16 / .78); color: #fff; font: 400 2rem/1 var(--titre); display: grid; place-items: center; padding: 0 0 4px; cursor: pointer;
+    opacity: .7; transition: opacity .2s, background .2s, border-color .2s; }
+  .precedente { left: clamp(-8px, -1.5vw, 4px); }
+  .suivante { right: clamp(-8px, -1.5vw, 4px); }
+  .tv-socle:hover .fleche, .fleche:focus-visible { opacity: 1; }
+  .fleche:hover { background: var(--or); border-color: var(--or); color: #1a1408; }
+  .points { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 22px; }
+  .points button { width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+  .points button::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--trait2); transition: background .2s, transform .2s; }
+  .points button:hover::before { background: var(--texte2); }
+  .points button[aria-pressed="true"]::before { background: var(--or); transform: scale(1.3); }
   .tv { transform: rotateX(24deg); transform-origin: 50% 100%; padding: clamp(6px, 1.2vw, 14px); border-radius: 14px; background: linear-gradient(#2b2723, #0b0a09);
     box-shadow: 0 40px 70px -20px rgb(0 0 0 / .85), 0 0 90px -10px rgb(217 164 65 / .28), inset 0 0 0 1px #3a342d; }
   .plateau { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 4px; background-size: cover; background-color: #26301c; }
@@ -449,7 +506,7 @@ const lancement = [
   .voile { position: absolute; inset: -8%; background: radial-gradient(#1a1820, #0d0c10 70%); filter: blur(14px); opacity: 0; transition: opacity .9s ease-in-out; pointer-events: none; }
   .voile.couvre { opacity: 1; }
   .legende strong { color: var(--texte); }
-  .legende { margin: 26px auto 0; max-width: 60ch; }
+  .legende { margin: 12px auto 0; max-width: 62ch; }
 
   .captures { margin-top: 40px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
   .captures figure { margin: 0; }

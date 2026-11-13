@@ -23,6 +23,7 @@ const pub = path.join(racine, 'public');
 
 // Pions de chaque carte (identifiants des figurines du pack). Une carte absente de la liste reçoit DEFAUT.
 const DISTRIBUTION = {
+  'forteresse-de-noirfer': ['hero_fighter', 'hero_wizard_f', 'hero_rogue', 'mob_orc', 'mob_goblin_archer', 'mob_skeleton', 'npc_alchemist'],
   'taverne-du-dragon-assoupi': ['hero_fighter', 'hero_wizard', 'npc_barmaid', 'npc_innkeeper', 'mob_rat', 'animal_cat'],
   'crypte-des-rois-oublies': ['hero_paladin', 'hero_rogue', 'mob_skeleton', 'mob_mummy', 'mob_wraith'],
   'port-de-haute-mer': ['npc_sailor', 'npc_captain', 'hero_pirate', 'npc_merchant', 'animal_cat'],
