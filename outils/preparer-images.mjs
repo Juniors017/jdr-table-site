@@ -3,13 +3,13 @@
 // Toutes les images sont en pleine résolution (celle du pack) avec un filigrane léger posé sur l'objet lui-même :
 // - objets (pieces/) : image du pack + vignette réduite pour la grille du catalogue (pieces/mini/) ;
 // - figurines (marche/) : 2 lignes sur 8 de la planche (repos et marche vers le bas), + version réduite (marche/mini/) ;
-//   seules celles de la démo du haut de page gardent leurs 4 directions (marche-demo/) ;
 // - objets animés (anim/) et dés (des/) : bandes complètes ;
-// - cartes prêtes à jouer (cartes/) : 1920 px de large.
+// Les cartes et les pions du haut de page viennent du dépôt de l'appli : voir outils/preparer-cartes.mjs.
 // Écrit aussi src/data/catalogue.json (noms, thèmes et sections repris des planches thématiques R*.json du dépôt).
 import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
+import { avecFiligrane } from './filigrane.mjs';
 
 const depot = process.argv[2];
 const pack = depot && path.join(depot, 'pack');
@@ -20,7 +20,6 @@ if (!pack || !fs.existsSync(path.join(pack, 'manifeste.json'))) {
 const racine = path.join(import.meta.dirname, '..');
 const pub = path.join(racine, 'public');
 const manifeste = JSON.parse(fs.readFileSync(path.join(pack, 'manifeste.json'), 'utf8'));
-const DEMO = ['hero_fighter', 'hero_wizard', 'npc_barmaid', 'mob_rat', 'animal_cat'];
 const MINI = 240; // côté maximal des vignettes du catalogue
 const MINI_FIG = 150; // côté maximal d'une image de figurine dans les grilles
 const dossier = (nom) => {
@@ -30,40 +29,6 @@ const dossier = (nom) => {
   return d;
 };
 
-// Filigrane : un texte répété en biais, blanc à liseré sombre pour rester lisible sur clair comme sur foncé.
-const filigrane = (w, h, texte, taille, force) =>
-  Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-  <defs><pattern id="f" width="${Math.round(taille * texte.length * 0.72)}" height="${Math.round(taille * 3)}" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)">
-    <text x="0" y="${taille}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${taille}" fill="#fff" fill-opacity="${force}" stroke="#000" stroke-opacity="${force * 0.6}" stroke-width="${Math.max(0.6, taille / 25)}">${texte}</text>
-  </pattern></defs>
-  <rect width="100%" height="100%" fill="url(#f)"/>
-</svg>`);
-const tailleTexte = (cote) => Math.max(10, Math.min(30, Math.round(cote / 11)));
-
-// Pose le filigrane sur une image. Sur une planche (figurines, bandes animées), il est répété à l'identique dans chaque
-// case (cw × ch) pour ne pas « glisser » pendant l'animation. Sur fond transparent, il n'est posé que sur l'objet
-// (pixels presque opaques : ni le fond, ni l'ombre) ; la transparence d'origine est ensuite remise telle quelle.
-// `seuil` : opacité minimale d'un pixel d'objet (plus bas pour les calques translucides, qui n'ont pas d'ombre).
-const avecFiligrane = async (image, { texte = 'TABLE-JDR', cw, ch, force = 0.2, seuil = 200 } = {}) => {
-  const { data, info } = await image.png().toBuffer({ resolveWithObject: true });
-  const { width: w, height: h } = info;
-  cw ??= w;
-  ch ??= h;
-  const tuile = await sharp(filigrane(cw, ch, texte, tailleTexte(Math.min(cw, ch)), force)).png().toBuffer();
-  const marque =
-    cw === w && ch === h
-      ? tuile
-      : await sharp({ create: { width: w, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-          .composite([{ input: tuile, tile: true, gravity: 'northwest' }]).png().toBuffer();
-  if (info.channels < 4) return sharp(data).composite([{ input: marque }]);
-  const alpha = await sharp(data).extractChannel('alpha').png().toBuffer();
-  const objet = await sharp(alpha).threshold(seuil).toColourspace('b-w').raw().toBuffer();
-  const masque = await sharp({ create: { width: w, height: h, channels: 3, background: '#fff' } })
-    .joinChannel(objet, { raw: { width: w, height: h, channels: 1 } }).png().toBuffer();
-  const marqueSurObjet = await sharp(marque).composite([{ input: masque, blend: 'dest-in' }]).png().toBuffer();
-  const couleurs = await sharp(data).composite([{ input: marqueSurObjet }]).removeAlpha().png().toBuffer();
-  return sharp(couleurs).joinChannel(alpha);
-};
 const HQ = { quality: 84, alphaQuality: 90, effort: 5 };
 
 // Fait tourner `travail` sur une liste, quelques fichiers à la fois.
@@ -156,7 +121,7 @@ fs.writeFileSync(path.join(racine, 'src', 'data', 'catalogue.json'), JSON.string
 console.log(`Données : ${compte(objets)} objets au catalogue, ${compte(bestiaire)} figurines au bestiaire.`);
 
 // --- Images ---
-const sorties = { pieces: dossier('pieces'), mini: path.join(pub, 'pieces', 'mini'), marche: dossier('marche'), demo: dossier('marche-demo'), anim: dossier('anim'), des: dossier('des') };
+const sorties = { pieces: dossier('pieces'), mini: path.join(pub, 'pieces', 'mini'), marche: dossier('marche'), anim: dossier('anim'), des: dossier('des') };
 sorties.marcheMini = path.join(sorties.marche, 'mini');
 for (const d of [sorties.mini, sorties.marcheMini]) fs.mkdirSync(d, { recursive: true });
 
@@ -187,7 +152,6 @@ await enParallele(planches, async (p) => {
   const mc = Math.min(Math.round(cw), MINI_FIG);
   const petite = await sharp(deux).resize({ width: mc * 8, height: mc * 2, fit: 'fill' }).png().toBuffer();
   await (await avecFiligrane(sharp(petite), { cw: mc, ch: mc, force: 0.16 })).webp({ quality: 76, alphaQuality: 85, effort: 5 }).toFile(path.join(sorties.marcheMini, `${p.id}.webp`));
-  if (DEMO.includes(p.id)) await (await avecFiligrane(sharp(fichier), { cw, ch, force: 0.18 })).webp(HQ).toFile(path.join(sorties.demo, `${p.id}.webp`));
   suite();
 });
 
@@ -206,13 +170,4 @@ for (const f of fs.readdirSync(path.join(pack, 'animations', 'des')).filter((x) 
 }
 console.log('  dés : faits');
 
-// Cartes prêtes à jouer : celles qui ont leur fichier .json (les autres images du dossier sont des fonds de démonstration).
-const cartesDir = path.join(pack, 'carte');
-const sortieCartes = dossier('cartes');
-for (const f of fs.readdirSync(cartesDir).filter((x) => x.endsWith('.json'))) {
-  const nom = f.replace('.json', '');
-  const image = await avecFiligrane(sharp(path.join(cartesDir, `${nom}.png`)).resize({ width: 1920 }), { texte: 'table-jdr.docuxlab.com', force: 0.16 });
-  await image.webp({ quality: 80, effort: 5 }).toFile(path.join(sortieCartes, `${nom}.webp`));
-}
-console.log('  cartes : faites');
 console.log('Images préparées dans public/.');

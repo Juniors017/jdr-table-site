@@ -3,21 +3,19 @@ import Page from '../layouts/Page.astro';
 import { url } from '../site';
 import catalogue from '../data/catalogue.json';
 import Clip from '../components/Clip.astro';
+import Visionneuse from '../components/Visionneuse.astro';
+import cartes from '../data/cartes.json';
 
-const tous = [...catalogue.bestiaire, ...catalogue.objets].flatMap((t) => t.sections.flatMap((s) => s.items)) as
-  { id: string; nom: string; genre: string; images?: number; boucle?: boolean; iw?: number; ih?: number }[];
+type Element = { id: string; nom: string; genre: string; images?: number; boucle?: boolean; iw?: number; ih?: number };
+const tous = [...catalogue.bestiaire, ...catalogue.objets].flatMap((t) => t.sections.flatMap((s) => s.items as Element[]));
 const nom = (id: string) => tous.find((f) => f.id === id)?.nom ?? id;
 const { chiffres: total } = catalogue;
 const fr = (n: number) => n.toLocaleString('fr-FR');
 
-// Pions qui se promènent sur la carte du haut de page. Positions en cases (carte de 32 × 18).
-const pions = [
-  { id: 'hero_fighter', taille: 1.5, v: 1, pts: [[12.8, 16.6], [12.8, 9.1], [15.4, 9.1]] },
-  { id: 'hero_wizard', taille: 1.5, v: 0.95, pts: [[13.5, 17.6], [13.5, 9.9], [15, 9.9]] },
-  { id: 'npc_barmaid', taille: 1.5, v: 0.9, pts: [[9.4, 6.4], [15.2, 6.4]] },
-  { id: 'mob_rat', taille: 1.5, v: 1.5, pts: [[19.3, 4], [21.8, 3.6], [21.6, 7.2], [20.4, 7.2]] },
-  { id: 'animal_cat', taille: 1.5, v: 1.1, pts: [[25.7, 3.2], [25.7, 7.8], [28.6, 7.8]] },
-];
+// Cartes du haut de page : faites dans l'appli, dessinées par outils/preparer-cartes.mjs avec leurs pions et trajets
+// (positions en cases, carte de 32 × 18). Elles défilent une à une ; la première est rendue dans la page.
+const [premiere] = cartes;
+const styleCarte = (id: string) => `background-image:url(${url(`cartes/${id}.webp`)})`;
 
 const etapes = [
   { t: 'Pose la TV à plat', d: "N'importe quelle TV fait l'affaire. Une plaque de plexiglas par-dessus protège la dalle des figurines." },
@@ -43,13 +41,6 @@ const vedettes = [
   'mob_owlbear', 'mob_minotaur', 'mob_death_knight', 'mob_genie', 'mob_treant', 'mob_phoenix', 'mob_dracolich', 'boss_lich',
 ];
 
-const cartes = [
-  { f: 'taverne', t: 'Taverne du Dragon assoupi' },
-  { f: 'crypte', t: 'Crypte des rois oubliés' },
-  { f: 'foret', t: 'Clairière du vieux chêne' },
-  { f: 'port', t: 'Port de Haute-Mer' },
-];
-
 const des = [
   { id: 'd4', faces: 4 }, { id: 'd6', faces: 6 }, { id: 'd8', faces: 8 }, { id: 'd10', faces: 10 },
   { id: 'd12', faces: 12 }, { id: 'd20', faces: 20 }, { id: 'd100', faces: 10 },
@@ -65,7 +56,7 @@ const chiffres = [
   { n: fr(total.figurines), t: 'figurines animées' },
   { n: fr(total.animes), t: 'objets animés' },
   { n: fr(total.des), t: 'dés, du d4 au d100' },
-  { n: '4', t: 'cartes prêtes à jouer' },
+  { n: fr(cartes.length), t: 'cartes prêtes à jouer' },
 ];
 
 const lancement = [
@@ -93,21 +84,24 @@ const lancement = [
 
     <div class="tv-socle" aria-hidden="true">
       <div class="tv">
-        <div class="plateau" id="plateau" style={`background-image:url(${url('cartes/taverne.webp')})`}>
+        <div class="plateau" id="plateau" style={styleCarte(premiere.id)} data-cartes={JSON.stringify(cartes)} data-base={url('')}>
           <div class="grille"></div>
-          {pions.map((p) => (
-            <div
-              class="fig pion"
-              data-pts={JSON.stringify(p.pts)}
-              data-v={p.v}
-              style={`width:${(p.taille / 32) * 100}%;left:${(p.pts[0][0] / 32) * 100}%;top:${(p.pts[0][1] / 18) * 100}%;background-image:url(${url(`marche-demo/${p.id}.webp`)})`}
-            />
-          ))}
-          <div class="brouillard"></div>
+          <div id="pions">
+            {premiere.pions.map((p) => (
+              <div
+                class="fig pion"
+                style={`width:${(p.taille / 32) * 100}%;left:${(p.pts[0][0] / 32) * 100}%;top:${(p.pts[0][1] / 18) * 100}%;background-image:url(${url(`marche-demo/${p.id}.webp`)})`}
+              />
+            ))}
+          </div>
+          <div class="voile"></div>
         </div>
       </div>
     </div>
-    <p class="legende discret">La Taverne du Dragon assoupi, une des cartes prêtes à jouer. Le brouillard cache la réserve… et ce qui s'y promène.</p>
+    <p class="legende discret">
+      <strong id="carte-titre">{premiere.titre}</strong>, une des {cartes.length} cartes faites dans l'appli.
+      Les pions y font leur ronde en contournant murs, portes et mobilier.
+    </p>
   </section>
 
   <section class="bloc" id="principe">
@@ -214,13 +208,15 @@ const lancement = [
 
   <section class="bloc" id="cartes">
     <p class="sur-titre">Les cartes</p>
-    <h2>Quatre cartes prêtes à jouer</h2>
+    <h2>{cartes.length} cartes prêtes à jouer</h2>
     <p class="chapo">Un clic les charge, 32 × 18 cases, pile à la taille de la TV. Tu peux ensuite tout modifier dans le créateur de carte.</p>
     <div class="cartes">
       {cartes.map((c) => (
         <figure>
-          <img src={url(`cartes/${c.f}.webp`)} alt={`Carte vue de dessus : ${c.t}`} width="1920" height="1080" loading="lazy" />
-          <figcaption>{c.t}</figcaption>
+          <button type="button" class="zoom" data-zoom={url(`cartes/${c.id}.webp`)} data-genre="piece" data-nom={c.titre} data-info="Carte de 32 × 18 cases, faite dans l'appli">
+            <img src={url(`cartes/mini/${c.id}.webp`)} alt={`Carte vue de dessus : ${c.titre}`} width="960" height="540" loading="lazy" />
+          </button>
+          <figcaption>{c.titre}</figcaption>
         </figure>
       ))}
     </div>
@@ -290,28 +286,88 @@ const lancement = [
       <a class="bouton creux" href={url('catalogue/')}>Parcourir le catalogue</a>
     </div>
   </section>
+  <Visionneuse />
 </Page>
 
 <script>
-  // --- Pions du haut de page : chacun fait des allers-retours sur son trajet, avec une pause à chaque bout. ---
+  // --- Carte du haut de page : les pions font leur ronde, puis le brouillard passe et la carte suivante arrive. ---
+  type Pion = { id: string; taille: number; v: number; pts: [number, number][] };
+  type Carte = { id: string; titre: string; pions: Pion[] };
   const calme = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const pions = [...document.querySelectorAll<HTMLElement>('.pion')].map((el) => ({
-    el,
-    pts: JSON.parse(el.dataset.pts!) as [number, number][],
-    v: Number(el.dataset.v),
-    i: 1,
-    sens: 1,
-    x: 0,
-    y: 0,
-    pause: 0,
-    ligne: 0,
-  }));
-  for (const p of pions) [p.x, p.y] = p.pts[0];
+  const plateau = document.getElementById('plateau')!;
+  const boitePions = document.getElementById('pions')!;
+  const voile = plateau.querySelector<HTMLElement>('.voile')!;
+  const titre = document.getElementById('carte-titre')!;
+  const cartes: Carte[] = JSON.parse(plateau.dataset.cartes!);
+  const base = plateau.dataset.base!;
+  const DUREE = 14; // secondes passées sur chaque carte (seulement quand elle est à l'écran)
+  const FONDU = 900; // ms : durée du brouillard (même valeur que la transition CSS de .voile)
 
+  let numero = 0;
+  let pions: { el: HTMLElement; pts: [number, number][]; v: number; i: number; sens: number; x: number; y: number; pause: number; ligne: number }[] = [];
+  const placer = (p: (typeof pions)[number]) => {
+    p.el.style.left = `${(p.x / 32) * 100}%`;
+    p.el.style.top = `${(p.y / 18) * 100}%`;
+  };
+  function poserPions(c: Carte) {
+    const els = c.pions.map((p) => {
+      const el = document.createElement('div');
+      el.className = 'fig pion';
+      el.style.width = `${(p.taille / 32) * 100}%`;
+      el.style.backgroundImage = `url(${base}marche-demo/${p.id}.webp)`;
+      return el;
+    });
+    boitePions.replaceChildren(...els);
+    suivrePions(c);
+  }
+  function suivrePions(c: Carte) {
+    const els = [...boitePions.children] as HTMLElement[];
+    pions = c.pions.map((p, k) => ({ el: els[k], pts: p.pts, v: p.v, i: 1, sens: 1, x: p.pts[0][0], y: p.pts[0][1], pause: Math.random() * 1.5, ligne: 0 }));
+    pions.forEach(placer);
+  }
+  suivrePions(cartes[0]);
+
+  // La carte suivante et ses pions sont chargés pendant qu'on regarde celle-ci.
+  const prete = new Map<number, Promise<void>>();
+  const charger = (n: number) => {
+    if (!prete.has(n)) {
+      const c = cartes[n];
+      const urls = [`${base}cartes/${c.id}.webp`, ...c.pions.map((p) => `${base}marche-demo/${p.id}.webp`)];
+      prete.set(n, Promise.all(urls.map((u) => new Promise<void>((ok) => { const im = new Image(); im.onload = im.onerror = () => ok(); im.src = u; }))).then(() => {}));
+    }
+    return prete.get(n)!;
+  };
+  let change = false;
+  async function carteSuivante() {
+    change = true;
+    const n = (numero + 1) % cartes.length;
+    await charger(n);
+    voile.classList.add('couvre');
+    await new Promise((ok) => setTimeout(ok, FONDU));
+    numero = n;
+    plateau.style.backgroundImage = `url(${base}cartes/${cartes[n].id}.webp)`;
+    titre.textContent = cartes[n].titre;
+    poserPions(cartes[n]);
+    voile.classList.remove('couvre');
+    charger((n + 1) % cartes.length);
+    change = false;
+  }
+
+  let visible = true;
+  new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(plateau);
+  let surCarte = 0;
   let avant = performance.now();
   function pas(maintenant: number) {
     const dt = Math.min(0.05, (maintenant - avant) / 1000);
     avant = maintenant;
+    if (visible && !change && cartes.length > 1) {
+      surCarte += dt;
+      if (surCarte > DUREE - 4) charger((numero + 1) % cartes.length);
+      if (surCarte > DUREE) {
+        surCarte = 0;
+        carteSuivante();
+      }
+    }
     for (const p of pions) {
       if (p.pause > 0) {
         p.pause -= dt;
@@ -328,7 +384,7 @@ const lancement = [
         p.y = cy;
         if (p.i + p.sens < 0 || p.i + p.sens >= p.pts.length) {
           p.sens = -p.sens;
-          p.pause = 2 + Math.random() * 2;
+          p.pause = 1.5 + Math.random() * 2;
         }
         p.i += p.sens;
       } else {
@@ -338,12 +394,11 @@ const lancement = [
         p.ligne = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 5 : 6) : dy > 0 ? 4 : 7;
         p.el.style.setProperty('--ligne', String(p.ligne));
       }
-      p.el.style.left = `${(p.x / 32) * 100}%`;
-      p.el.style.top = `${(p.y / 18) * 100}%`;
+      placer(p);
     }
     requestAnimationFrame(pas);
   }
-  if (!calme && pions.length) requestAnimationFrame(pas);
+  if (!calme) requestAnimationFrame(pas);
 
   // --- Dés : la bande « lancer » tourne 0,6 s, puis on affiche l'image du résultat tiré. ---
   const de = document.getElementById('de')!;
@@ -388,10 +443,12 @@ const lancement = [
   .grille { position: absolute; inset: 0; background-image: linear-gradient(to right, rgb(0 0 0 / .22) 1px, transparent 1px), linear-gradient(to bottom, rgb(0 0 0 / .22) 1px, transparent 1px);
     background-size: calc(100% / 32) calc(100% / 18); }
   /* Les pions de la démo ont la planche complète 8 × 8 : lignes 0-3 = repos, 4-7 = marche (bas, gauche, droite, haut). */
-  .pion { position: absolute; transform: translate(-50%, -50%); will-change: left, top; background-size: 800% 800%; background-position-y: calc(var(--ligne, 4) / 7 * 100%); }
-  .brouillard { position: absolute; left: 56.25%; top: 11.1%; width: 19%; height: 33.4%; background: #0d0c10; filter: blur(5px);
-    animation: brouillard 14s ease-in-out infinite; }
-  @keyframes brouillard { 0%, 30% { opacity: .96; } 40%, 92% { opacity: 0; } 100% { opacity: .96; } }
+  /* :global : les pions des cartes suivantes sont créés par le script, sans l'attribut de portée d'Astro. */
+  .plateau :global(.pion) { position: absolute; transform: translate(-50%, -50%); will-change: left, top; background-size: 800% 800%; background-position-y: calc(var(--ligne, 4) / 7 * 100%); }
+  /* Brouillard qui recouvre la table le temps de changer de carte. */
+  .voile { position: absolute; inset: -8%; background: radial-gradient(#1a1820, #0d0c10 70%); filter: blur(14px); opacity: 0; transition: opacity .9s ease-in-out; pointer-events: none; }
+  .voile.couvre { opacity: 1; }
+  .legende strong { color: var(--texte); }
   .legende { margin: 26px auto 0; max-width: 60ch; }
 
   .captures { margin-top: 40px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
@@ -424,8 +481,9 @@ const lancement = [
   .bestiaire span, .animes span { display: block; font-size: .9rem; font-weight: 600; color: var(--texte2); line-height: 1.25; }
   .suite { margin-top: 30px; }
 
-  .cartes { margin-top: 40px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+  .cartes { margin-top: 40px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
   .cartes figure { margin: 0; border: 1px solid var(--trait); border-radius: 12px; overflow: hidden; background: var(--carte); }
+  .cartes .zoom { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; overflow: hidden; }
   .cartes img { width: 100%; height: auto; transition: transform .6s; }
   .cartes figure:hover img { transform: scale(1.04); }
   .cartes figcaption { padding: 12px 16px; font: 600 1rem/1.2 var(--titre); letter-spacing: .03em; color: #fff; position: relative; background: var(--carte); }
@@ -454,7 +512,4 @@ const lancement = [
   .conseils { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 22px; display: grid; gap: 12px; }
   .conseils ul { margin: 0; padding-left: 20px; color: var(--texte2); display: grid; gap: 6px; }
 
-  @media (prefers-reduced-motion: reduce) {
-    .brouillard { animation: none; }
-  }
 </style>

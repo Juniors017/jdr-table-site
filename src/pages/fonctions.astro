@@ -3,6 +3,7 @@ import Page from '../layouts/Page.astro';
 import { url } from '../site';
 import Clip from '../components/Clip.astro';
 import catalogue from '../data/catalogue.json';
+import cartes from '../data/cartes.json';
 
 // Visite complète de l'appli. Chaque chapitre : des séquences animées et une capture, tournées dans l'appli, puis ses options.
 type Option = [string, string];
@@ -163,7 +164,7 @@ const chapitres: Chapitre[] = [
       ['Nombre de cases', "Un curseur change la grille et tout suit. Un bouton revient à la taille calibrée sur tes socles."],
       ['Opacité de la grille', "De discrète à bien visible."],
       ['Mes cartes', "Garde une carte dans le dossier cartes pour la réutiliser dans d'autres scènes."],
-      ['Cartes prêtes à jouer', "Taverne du Dragon assoupi, Crypte des rois oubliés, Clairière du vieux chêne, Port de Haute-Mer : 32 × 18 cases, modifiables."],
+      ['Cartes prêtes à jouer', `${cartes.length} cartes de 32 × 18 cases, modifiables : ${cartes.map((c) => c.titre).join(', ')}.`],
       ['Remplir / vider', "Remplit la carte en dalles de pierre, ou vide la carte en cours pour repartir de zéro."],
       ['Calques', "Sols, murs, objets, décor, PNJ, lignes-murs, déclencheurs : clic pour sélectionner, cadenas pour verrouiller, œil pour montrer aux joueurs."],
       ['Tout verrouiller', "Une fois la carte finie, fige tout d'un clic."],

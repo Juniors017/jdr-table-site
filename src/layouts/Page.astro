@@ -8,7 +8,7 @@ interface Props {
 }
 const { titre, description = SITE.description } = Astro.props;
 const titreComplet = titre ? `${titre} · ${SITE.nom}` : `${SITE.nom} — la TV à plat comme plateau de jeu`;
-const image = new URL(url('cartes/taverne.webp'), Astro.site);
+const image = new URL(url('cartes/taverne-du-dragon-assoupi.webp'), Astro.site);
 ---
 
 <!doctype html>

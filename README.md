@@ -27,6 +27,12 @@ Site de présentation de l'appli Table de JDR et de son pack d'images. Site stat
   ([assets-table-jdr](https://github.com/Juniors017/assets-table-jdr)), tout refaire (images et `catalogue.json`) :
   `node outils/preparer-images.mjs <chemin vers assets-table-jdr>`. Les thèmes et sections du catalogue viennent des planches
   `generateur/planches/R*.json` de ce dépôt.
+- Cartes (haut de l'accueil et section « Les cartes ») : elles viennent du dossier `cartes/` du dépôt de l'appli
+  ([table-jdr](https://github.com/Juniors017/table-jdr)). Après l'ajout ou la modification d'une carte dans l'appli :
+  `node outils/preparer-cartes.mjs <chemin vers table-jdr>`. Le script ouvre l'appli dans Edge sans fenêtre, dessine chaque
+  carte avec le code de l'appli et calcule les trajets des pions (ils contournent murs, portes fermées, eau et mobilier).
+  Il écrit `public/cartes/`, `public/marche-demo/` et `src/data/cartes.json`. Les pions de chaque carte et l'ordre de
+  passage se règlent en tête du script (`DISTRIBUTION`) ; une carte de moins de 100 pièces est ignorée.
 
 ## Mise en ligne
 
